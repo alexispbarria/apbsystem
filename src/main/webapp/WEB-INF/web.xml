@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+    <!-- Restringir acceso a la carpeta de la app -->
+    <security-constraint>
+        <display-name>Zona Segura</display-name>
+        <web-resource-collection>
+            <web-resource-name>App Protegida</web-resource-name>
+            <url-pattern>/app/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>USER</role-name>
+        </auth-constraint>
+    </security-constraint>
+    
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <realm-name>mysql-realm</realm-name>
+        <form-login-config>
+            <form-login-page>/login.xhtml</form-login-page>
+            <form-error-page>/login.xhtml?error=true</form-error-page>
+        </form-login-config>
+    </login-config>
+    
+    <!-- Definición del DataSource a nivel de aplicación -->
+    <data-source>
+        <name>java:app/jdbc/MiAppDB</name>
+        <class-name>com.mysql.cj.jdbc.MysqlDataSource</class-name>
+        <server-name>localhost</server-name>
+        <port-number>3306</port-number>
+        <database-name>apbapp_bd</database-name>
+        <user>root</user>
+        <password>bandera.46</password>
+        
+        <!-- Propiedades adicionales recomendadas para MySQL -->
+        <property>
+            <name>serverTimezone</name>
+            <value>America/Santiago</value>
+        </property>
+        <property>
+            <name>useSSL</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>allowPublicKeyRetrieval</name>
+            <value>true</value>
+        </property>
+    </data-source>
+</web-app>

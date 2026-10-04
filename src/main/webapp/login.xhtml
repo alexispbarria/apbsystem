@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <title>Iniciar Sesión - Sistema Empresarial</title>
+    <!-- Carga de PrimeFlex vía CDN (Para producción puedes descargarlo o usar WebJars) -->
+    <link rel="stylesheet" href="https://unpkg.com/primeflex@3.3.1/primeflex.min.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</h:head>
+
+<h:body styleClass="flex align-items-center justify-content-center h-screen surface-ground m-0">
+
+    <!-- Notificaciones flotantes para errores -->
+    <p:growl id="mensajes" showDetail="true" life="4000" />
+
+    <div class="surface-card p-5 shadow-6 border-round-2xl w-11 sm:w-8 md:w-6 lg:w-4 xl:w-3">
+        <div class="text-center mb-5">
+            <!-- Icono o Logo superior -->
+            <i class="pi pi-bolt text-primary text-5xl mb-3"></i>
+            <div class="text-900 text-3xl font-medium mb-2">Bienvenido de nuevo</div>
+            <span class="text-600 font-medium">Por favor, ingresa tus credenciales</span>
+        </div>
+
+        <h:form id="loginForm">
+            
+            <!-- Campo de Usuario -->
+            <div class="mb-4">
+                <p:outputLabel for="username" value="Usuario" styleClass="block text-900 font-medium mb-2" />
+                <p:inputText id="username" 
+                             value="#{loginBean.username}" 
+                             required="true" 
+                             requiredMessage="El usuario es obligatorio"
+                             styleClass="w-full" 
+                             placeholder="Ej: apinilla" />
+            </div>
+
+            <!-- Campo de Contraseña con toggle para ver/ocultar -->
+            <div class="mb-4">
+                <p:outputLabel for="password" value="Contraseña" styleClass="block text-900 font-medium mb-2" />
+                <p:password id="password" 
+                            value="#{loginBean.password}" 
+                            required="true" 
+                            requiredMessage="La contraseña es obligatoria"
+                            toggleMask="true" 
+                            styleClass="w-full" 
+                            placeholder="********" />
+            </div>
+
+            <!-- Recordarme & Olvidé contraseña (Visuales, para extender futuro) -->
+            <div class="flex align-items-center justify-content-between mb-5">
+                <div class="flex align-items-center">
+                    <p:selectBooleanCheckbox id="remember" styleClass="mr-2" />
+                    <label for="remember" class="text-600">Recordarme</label>
+                </div>
+                <a href="#" class="font-medium no-underline text-primary">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <!-- Botón de Ingreso con feedback visual (icono de carga automático al hacer clic si usas AJAX) -->
+            <p:commandButton value="Ingresar" 
+                             icon="pi pi-sign-in" 
+                             action="#{loginBean.hacerLogin}" 
+                             update="@form mensajes" 
+                             styleClass="w-full py-2 text-lg border-round-lg" />
+        </h:form>
+    </div>
+
+</h:body>
+</html>

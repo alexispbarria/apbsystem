@@ -30,7 +30,7 @@
             <div class="mb-4">
                 <p:outputLabel for="username" value="Usuario" styleClass="block text-900 font-medium mb-2" />
                 <p:inputText id="username" 
-                             value="#{loginBean.username}" 
+                             value="#{loginBean.user.username}" 
                              required="true" 
                              requiredMessage="El usuario es obligatorio"
                              styleClass="w-full" 
@@ -41,7 +41,7 @@
             <div class="mb-4">
                 <p:outputLabel for="password" value="Contraseña" styleClass="block text-900 font-medium mb-2" />
                 <p:password id="password" 
-                            value="#{loginBean.password}" 
+                            value="#{loginBean.user.password}" 
                             required="true" 
                             requiredMessage="La contraseña es obligatoria"
                             toggleMask="true" 
@@ -61,7 +61,7 @@
             <!-- Botón de Ingreso con feedback visual (icono de carga automático al hacer clic si usas AJAX) -->
             <p:commandButton value="Ingresar" 
                              icon="pi pi-sign-in" 
-                             action="#{loginBean.hacerLogin}" 
+                             action="#{loginBean.login}" 
                              update="@form mensajes" 
                              styleClass="w-full py-2 text-lg border-round-lg" />
         </h:form>

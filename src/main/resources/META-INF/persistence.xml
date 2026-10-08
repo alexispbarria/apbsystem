@@ -1,7 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
-    <!-- Define Persistence Unit -->
-    <persistence-unit name="my_persistence_unit">
+<persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
+
+    <persistence-unit name="MiAppPU" transaction-type="JTA">
+        
+        <!-- Proveedor de Hibernate -->
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        
+        <!-- Enlaza exactamente con el DataSource que creamos en tu web.xml -->
+        <jta-data-source>java:app/jdbc/MiAppDB</jta-data-source>
+        
+        <!-- Entidades de tu proyecto actual -->
+        <class>com.mycompany.apbapp.entities.Cargos</class>
+        <class>com.mycompany.apbapp.entities.LoginSessions</class>
+        <class>com.mycompany.apbapp.entities.Users</class>
+        
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <validation-mode>NONE</validation-mode>
+        
+        <properties>
+            <!-- Muestra las consultas en la consola de Payara para debug -->
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            
+            <!-- Plataforma JTA para Payara/GlassFish -->
+            <property name="hibernate.transaction.jta.platform" value="SunOne"/>
+            
+            <!-- Dialecto genérico actualizado (MySQL57Dialect está obsoleto en MySQL 8+) -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+        </properties>
         
     </persistence-unit>
 </persistence>

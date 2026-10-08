@@ -5,43 +5,76 @@
          version="6.0">
 
     
+    <context-param>
+        <param-name>jakarta.faces.PROJECT_STAGE</param-name>
+        <param-value>Development</param-value> <!-- Cambiado a Development mientras programas -->
+    </context-param>
+    
+    <!-- TRUCO VITAL: Si tus archivos físicos son .xhtml pero usas URLs .hsm -->
+    <context-param>
+        <param-name>jakarta.faces.DEFAULT_SUFFIX</param-name>
+        <param-value>.xhtml</param-value>
+    </context-param>
+
+    <servlet>
+        <servlet-name>Faces Servlet</servlet-name>
+        <servlet-class>jakarta.faces.webapp.FacesServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Faces Servlet</servlet-name>
+        <url-pattern>*.hsm</url-pattern>
+    </servlet-mapping>
+
     <session-config>
-        <session-timeout>30</session-timeout>
+        <!-- -1 significa sesión infinita. En web-app 6.0 se recomienda un número (ej. 120 min) -->
+        <session-timeout>120</session-timeout>
         <tracking-mode>COOKIE</tracking-mode>
     </session-config>
 
-    <!-- Restringir acceso a la carpeta de la app -->
-    <security-constraint>
-        <display-name>Zona Segura</display-name>
-        <web-resource-collection>
-            <web-resource-name>App Protegida</web-resource-name>
-            <url-pattern>/app/*</url-pattern>
-        </web-resource-collection>
-        <auth-constraint>
-            <role-name>USER</role-name>
-        </auth-constraint>
-    </security-constraint>
+    <!-- Parámetros JSF -->
+    <context-param>
+        <param-name>jakarta.faces.FACELETS_SKIP_COMMENTS</param-name>
+        <param-value>true</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jakarta.faces.DATETIMECONVERTER_DEFAULT_TIMEZONE_IS_SYSTEM_TIMEZONE</param-name>
+        <param-value>true</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jakarta.faces.CLIENT_WINDOW_MODE</param-name>
+        <param-value>url</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jakarta.faces.FACELETS_BUFFER_SIZE</param-name>
+        <param-value>131072</param-value>
+    </context-param>
+
+    <welcome-file-list>
+        <welcome-file>login.hsm</welcome-file>
+    </welcome-file-list>
+
+    <!-- Configuración PrimeFaces (Asumiendo que agregarás la librería Omega) -->
+    <!-- Se dejó en 'omega' fijo para evitar que falle si no existe el Bean guestPreferences -->
+    <context-param>
+        <param-name>primefaces.THEME</param-name>
+        <param-value>omega-blue</param-value> 
+    </context-param>
+    <context-param>
+        <param-name>primefaces.FONT_AWESOME</param-name>
+        <param-value>true</param-value>
+    </context-param>
     
-    <login-config>
-        <auth-method>FORM</auth-method>
-        <realm-name>mysql-realm</realm-name>
-        <form-login-config>
-            <form-login-page>/login.xhtml</form-login-page>
-            <form-error-page>/login.xhtml?error=true</form-error-page>
-        </form-login-config>
-    </login-config>
-    
-    <!-- Definición del DataSource a nivel de aplicación -->
+    <!-- CONEXIÓN A RAILWAY -->
     <data-source>
         <name>java:app/jdbc/MiAppDB</name>
         <class-name>com.mysql.cj.jdbc.MysqlDataSource</class-name>
-        <server-name>localhost</server-name>
-        <port-number>3306</port-number>
-        <database-name>apbapp_bd</database-name>
+        <server-name>metro.proxy.rlwy.net</server-name>
+        <port-number>36135</port-number>
+        <database-name>railway</database-name>
         <user>root</user>
-        <password>bandera.46</password>
-        
-        <!-- Propiedades adicionales recomendadas para MySQL -->
+        <password>yIOTUXuvaaCPDoJpcqGOlSjEMVGkOFKy</password>
         <property>
             <name>serverTimezone</name>
             <value>America/Santiago</value>
@@ -55,4 +88,27 @@
             <value>true</value>
         </property>
     </data-source>
+
+    <!-- Mapeo de MIME Types para las fuentes web y PrimeFlex -->
+    <mime-mapping>
+        <extension>ttf</extension>
+        <mime-type>application/font-sfnt</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>woff</extension>
+        <mime-type>application/font-woff</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>woff2</extension>
+        <mime-type>application/font-woff2</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>eot</extension>
+        <mime-type>application/vnd.ms-fontobject</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>svg</extension>
+        <mime-type>image/svg+xml</mime-type>
+    </mime-mapping>
+
 </web-app>

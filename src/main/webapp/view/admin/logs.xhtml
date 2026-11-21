@@ -1,0 +1,202 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="logs"/>
+
+    <ui:define name="title">APB SALES · Logs de Auditoría (ADMIN)</ui:define>
+
+    <ui:define name="content">
+
+        <div class="apb-pos-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                    <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:34px;padding:0 12px;font-size:0.80rem;">
+                        <i class="pi pi-arrow-left"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <span class="apb-role-pill apb-role-admin">
+                        <i class="pi pi-shield"></i>
+                        <span>Exclusivo Administrador</span>
+                    </span>
+                </div>
+                <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                    Logs de <span>Auditoría</span>
+                </h1>
+                <p class="apb-hero-subtitle" style="margin-top:4px;">
+                    Trazabilidad completa de cada acción ejecutada en el sistema y el usuario responsable.
+                </p>
+            </div>
+        </div>
+
+        <h:form id="logsForm">
+
+            <!-- BARRA DE FILTROS -->
+            <div class="apb-filter-bar">
+                <div class="apb-field-col">
+                    <label>Módulo</label>
+                    <p:selectOneMenu value="#{auditLogBean.filtroModulo}">
+                        <f:selectItem itemLabel="Todos los módulos" itemValue="TODOS"/>
+                        <f:selectItem itemLabel="AUTH (Accesos)" itemValue="AUTH"/>
+                        <f:selectItem itemLabel="CAJA (Turnos)" itemValue="CAJA"/>
+                        <f:selectItem itemLabel="VENTAS" itemValue="VENTAS"/>
+                        <f:selectItem itemLabel="PRODUCTOS" itemValue="PRODUCTOS"/>
+                        <f:selectItem itemLabel="INVENTARIO" itemValue="INVENTARIO"/>
+                        <f:selectItem itemLabel="CLIENTES" itemValue="CLIENTES"/>
+                        <f:selectItem itemLabel="USUARIOS" itemValue="USUARIOS"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Usuario</label>
+                    <p:inputText value="#{auditLogBean.filtroUsername}" placeholder="Ej: admin"/>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Acción / Detalle</label>
+                    <p:inputText value="#{auditLogBean.filtroTexto}" placeholder="Ej: VENTA, STOCK, LOGIN..."/>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Desde</label>
+                    <p:datePicker value="#{auditLogBean.fechaDesde}" pattern="dd/MM/yyyy" placeholder="dd/mm/aaaa"/>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Hasta</label>
+                    <p:datePicker value="#{auditLogBean.fechaHasta}" pattern="dd/MM/yyyy" placeholder="dd/mm/aaaa"/>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <p:commandButton value="Filtrar"
+                                     icon="pi pi-search"
+                                     action="#{auditLogBean.buscar}"
+                                     process="@form"
+                                     update="@form"
+                                     styleClass="apb-pf-btn"
+                                     style="flex:1;"/>
+                    <p:commandButton icon="pi pi-refresh"
+                                     title="Limpiar y recargar"
+                                     action="#{auditLogBean.limpiarFiltros}"
+                                     process="@this"
+                                     update="@form"
+                                     styleClass="apb-pf-btn-ghost"/>
+                </div>
+            </div>
+
+            <!-- TABLA DE AUDITORIA -->
+            <p:dataTable id="tablaLogs"
+                         value="#{auditLogBean.logs}"
+                         var="log"
+                         paginator="true"
+                         rows="15"
+                         paginatorPosition="bottom"
+                         emptyMessage="No se encontraron registros de auditoría con los filtros aplicados.">
+
+                <p:column headerText="Fecha y Hora" style="width:145px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.78rem;color:var(--apb-text-secondary);">
+                        <h:outputText value="#{log.created}">
+                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm:ss"/>
+                        </h:outputText>
+                    </span>
+                </p:column>
+
+                <p:column headerText="Usuario" style="width:140px;">
+                    <div style="font-weight:600;">@#{log.username}</div>
+                    <span class="apb-mini-tag #{log.rolCodigo eq 'ADMIN' ? 'tag-admin' : 'tag-live'}" style="margin-top:3px;display:inline-block;">
+                        #{log.rolCodigo}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Módulo" style="width:120px;">
+                    <span class="apb-mini-tag #{auditLogBean.getModuloBadgeClass(log.modulo)}">
+                        #{log.modulo}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Acción" style="width:165px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.78rem;color:var(--apb-primary);font-weight:600;">
+                        #{log.accion}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Detalle">
+                    <span style="font-size:0.84rem;color:var(--apb-text-primary);">#{log.detalle}</span>
+                </p:column>
+
+                <p:column headerText="IP" style="width:120px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.75rem;color:var(--apb-text-muted);">
+                        #{empty log.ipOrigen ? '-' : log.ipOrigen}
+                    </span>
+                </p:column>
+
+                <p:column headerText="" style="width:60px;text-align:center;">
+                    <p:commandButton icon="pi pi-eye"
+                                     title="Ver detalle completo"
+                                     action="#{auditLogBean.seleccionarLog(log)}"
+                                     process="@this"
+                                     update=":detalleLogForm"
+                                     oncomplete="PF('dlgDetalleLog').show();"
+                                     styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+                </p:column>
+
+            </p:dataTable>
+
+        </h:form>
+
+        <!-- MODAL DETALLE DE EVENTO -->
+        <p:dialog header="Detalle de Registro de Auditoría"
+                  widgetVar="dlgDetalleLog"
+                  modal="true"
+                  resizable="false"
+                  width="540"
+                  appendTo="@(body)">
+            <h:form id="detalleLogForm">
+                <h:panelGroup rendered="#{auditLogBean.logSeleccionado ne null}">
+                    <div class="apb-session-dl" style="margin-top:0;margin-bottom:14px;">
+                        <div class="apb-session-cell">
+                            <span>Usuario Responsable</span>
+                            <strong>@#{auditLogBean.logSeleccionado.username} (#{auditLogBean.logSeleccionado.rolCodigo})</strong>
+                        </div>
+                        <div class="apb-session-cell">
+                            <span>Fecha / Hora</span>
+                            <strong>
+                                <h:outputText value="#{auditLogBean.logSeleccionado.created}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm:ss"/>
+                                </h:outputText>
+                            </strong>
+                        </div>
+                        <div class="apb-session-cell">
+                            <span>Módulo / Acción</span>
+                            <strong>#{auditLogBean.logSeleccionado.modulo} · #{auditLogBean.logSeleccionado.accion}</strong>
+                        </div>
+                        <div class="apb-session-cell">
+                            <span>Entidad / ID</span>
+                            <strong>
+                                #{empty auditLogBean.logSeleccionado.entidad ? '-' : auditLogBean.logSeleccionado.entidad}
+                                #{auditLogBean.logSeleccionado.entidadId ne null ? ' #' : ''}#{auditLogBean.logSeleccionado.entidadId}
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="apb-session-cell" style="margin-bottom:14px;">
+                        <span>Descripción Completa</span>
+                        <strong style="line-height:1.5;font-weight:500;">#{auditLogBean.logSeleccionado.detalle}</strong>
+                    </div>
+
+                    <div class="apb-session-cell">
+                        <span>IP de Origen</span>
+                        <strong>#{empty auditLogBean.logSeleccionado.ipOrigen ? 'No registrada' : auditLogBean.logSeleccionado.ipOrigen}</strong>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+    </ui:define>
+
+</ui:composition>

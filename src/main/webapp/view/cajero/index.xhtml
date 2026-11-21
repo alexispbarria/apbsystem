@@ -1,0 +1,626 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="cajero"/>
+
+    <ui:define name="title">APB SALES · Pantalla de Cajero (POS)</ui:define>
+
+    <ui:define name="content">
+
+        <h:panelGroup id="cajeroRoot" layout="block">
+
+            <!-- CABECERA DE CAJERO -->
+            <div class="apb-pos-header">
+                <div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                        <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                           class="apb-cta-secondary"
+                           style="height:34px;padding:0 12px;font-size:0.80rem;">
+                            <i class="pi pi-arrow-left"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <span class="apb-mini-tag #{cajeroBean.cajaAbierta ? 'tag-live' : 'tag-soon'}">
+                            #{cajeroBean.cajaAbierta ? 'Caja Abierta' : 'Caja Cerrada'}
+                        </span>
+                        <span class="apb-role-pill #{sessionBean.rolBadgeClass}">
+                            <i class="#{sessionBean.rolIconClass}"></i>
+                            <span>Operador: #{sessionBean.rolEtiqueta}</span>
+                        </span>
+                    </div>
+                    <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                        Terminal de <span>Cajero</span>
+                    </h1>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <a href="#{request.contextPath}/view/ventas/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:38px;padding:0 14px;font-size:0.82rem;">
+                        <i class="pi pi-ticket"></i>
+                        <span>Historial de Ventas</span>
+                    </a>
+                    <h:panelGroup rendered="#{cajeroBean.cajaAbierta}">
+                        <button type="button"
+                                class="apb-cta-secondary"
+                                style="height:38px;padding:0 14px;font-size:0.82rem;border-color:rgba(244,63,94,0.45);color:#fecdd3;"
+                                onclick="PF('dlgCerrarCaja').show();">
+                            <i class="pi pi-lock"></i>
+                            <span>Cerrar / Arquear Caja</span>
+                        </button>
+                    </h:panelGroup>
+                </div>
+            </div>
+
+            <!-- =============================================================
+                 ESTADO A: SIN CAJA ABIERTA -> APERTURA CON VALOR DE CAJA INICIAL
+                 ============================================================= -->
+            <h:panelGroup layout="block" rendered="#{not cajeroBean.cajaAbierta}" styleClass="apb-apertura-card">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+                    <span class="apb-module-icon" style="width:52px;height:52px;font-size:1.35rem;">
+                        <i class="pi pi-wallet"></i>
+                    </span>
+                    <div>
+                        <h2 style="margin:0;font-family:var(--apb-font-display);font-size:1.3rem;">
+                            Apertura de Turno de Caja
+                        </h2>
+                        <span style="font-size:0.84rem;color:var(--apb-text-secondary);">
+                            Registra el <strong>valor de caja inicial</strong> (sencillo / fondo fijo) antes de comenzar a vender.
+                        </span>
+                    </div>
+                </div>
+
+                <h:form id="aperturaCajaForm">
+                    <div class="apb-field-col" style="margin-bottom:16px;">
+                        <p:outputLabel for="montoInicialInput" value="Valor de Caja Inicial (CLP)"/>
+                        <p:inputNumber id="montoInicialInput"
+                                       value="#{cajeroBean.montoCajaInicial}"
+                                       symbol="$ "
+                                       decimalPlaces="0"
+                                       thousandSeparator="."
+                                       decimalSeparator=","
+                                       minValue="0"
+                                       required="true"
+                                       requiredMessage="Ingresa el valor inicial de caja (puede ser 0)."/>
+                        <p:message for="montoInicialInput"/>
+                    </div>
+
+                    <div class="apb-field-col" style="margin-bottom:20px;">
+                        <p:outputLabel for="obsApertura" value="Observación de apertura (opcional)"/>
+                        <p:inputText id="obsApertura"
+                                     value="#{cajeroBean.observacionApertura}"
+                                     placeholder="Ej: Turno mañana, fondo en efectivo verificado"/>
+                    </div>
+
+                    <p:commandButton value="Abrir Caja y Comenzar Turno"
+                                     icon="pi pi-check-circle"
+                                     action="#{cajeroBean.abrirTurnoCaja}"
+                                     process="@form"
+                                     update=":cajeroRoot :appMessages"
+                                     styleClass="apb-pf-btn"
+                                     style="width:100%;height:48px;"/>
+                </h:form>
+            </h:panelGroup>
+
+            <!-- =============================================================
+                 ESTADO B: CAJA ABIERTA -> POS COMPLETO CON BUSQUEDA DUAL
+                 ============================================================= -->
+            <h:panelGroup layout="block" rendered="#{cajeroBean.cajaAbierta}">
+
+                <!-- Barra de estado del turno actual (Caja inicial + acumulados) -->
+                <div class="apb-caja-banner">
+                    <div class="apb-caja-stats">
+                        <div class="apb-caja-stat-item">
+                            <span>Turno Activo</span>
+                            <strong>Caja ##{cajeroBean.cajaActual.id}</strong>
+                        </div>
+                        <div class="apb-caja-stat-item">
+                            <span>Caja Inicial</span>
+                            <strong style="color:#6ee7b7;">#{cajeroBean.formatoCLP(cajeroBean.cajaActual.montoInicial)}</strong>
+                        </div>
+                        <div class="apb-caja-stat-item">
+                            <span>Ventas Efectivo</span>
+                            <strong>#{cajeroBean.formatoCLP(cajeroBean.cajaActual.totalVentasEfectivo)}</strong>
+                        </div>
+                        <div class="apb-caja-stat-item">
+                            <span>Tarjetas / Transf.</span>
+                            <strong>#{cajeroBean.formatoCLP(cajeroBean.cajaActual.totalVentasDebito + cajeroBean.cajaActual.totalVentasCredito + cajeroBean.cajaActual.totalVentasTransferencia)}</strong>
+                        </div>
+                        <div class="apb-caja-stat-item">
+                            <span>Esperado en Caja</span>
+                            <strong style="color:var(--apb-primary);">#{cajeroBean.formatoCLP(cajeroBean.cajaActual.montoEsperadoCierre)}</strong>
+                        </div>
+                    </div>
+
+                    <div style="font-family:var(--apb-font-mono);font-size:0.74rem;color:var(--apb-text-secondary);">
+                        Atajo escáner: <strong>[F2]</strong>
+                    </div>
+                </div>
+
+                <!-- Banner de confirmacion de ultima venta -->
+                <h:panelGroup layout="block"
+                              rendered="#{cajeroBean.ultimaVentaRegistrada ne null}"
+                              style="margin-bottom:16px;padding:12px 18px;border-radius:12px;background:rgba(16,185,129,0.14);border:1px solid rgba(52,211,153,0.40);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <span style="font-size:0.86rem;color:#d1fae5;">
+                        <i class="pi pi-check-circle" style="margin-right:8px;color:#34d399;"></i>
+                        Última venta registrada: <strong>#{cajeroBean.ultimaVentaRegistrada.folio}</strong>
+                        · Total: <strong>#{cajeroBean.formatoCLP(cajeroBean.ultimaVentaRegistrada.total)}</strong>
+                        (#{cajeroBean.ultimaVentaRegistrada.metodoPago})
+                        <h:outputText rendered="#{cajeroBean.ultimaVentaRegistrada.vuelto gt 0}"
+                                      value=" · Vuelto: #{cajeroBean.formatoCLP(cajeroBean.ultimaVentaRegistrada.vuelto)}"/>
+                    </span>
+                    <a href="#{request.contextPath}/view/ventas/index.hsm"
+                       style="font-size:0.78rem;font-weight:600;color:#6ee7b7;">
+                        Ver historial →
+                    </a>
+                </h:panelGroup>
+
+                <div class="apb-pos-grid">
+
+                    <!-- COLUMNA IZQUIERDA: CATALOGO RAPIDO (2 BUSQUEDAS) + CLIENTE -->
+                    <div style="display:flex;flex-direction:column;gap:18px;">
+
+                        <section class="apb-glass-panel">
+                            <div class="apb-section-head" style="margin-bottom:12px;">
+                                <h2 class="apb-panel-title" style="margin:0;">
+                                    <i class="pi pi-th-large"></i>
+                                    <span>Catálogo Rápido</span>
+                                </h2>
+                                <span class="apb-mini-tag tag-pos">2 modos de búsqueda</span>
+                            </div>
+
+                            <!-- 2 FORMAS DE BUSQUEDA: CODIGO DE BARRAS + NOMBRE DE PRODUCTO -->
+                            <div class="apb-search-dual-grid">
+
+                                <!-- MODO 1: CODIGO DE BARRAS (PISTOLA USB + CAMARA) -->
+                                <div class="apb-search-box is-barcode">
+                                    <div class="apb-search-box-label">
+                                        <span><i class="pi pi-qrcode" style="margin-right:6px;color:var(--apb-primary);"></i>1. Código de Barras</span>
+                                        <span class="apb-mini-tag tag-pos">F2 / USB / Cámara</span>
+                                    </div>
+
+                                    <h:form id="barcodeForm">
+                                        <p:defaultCommand target="btnBuscarBarra"/>
+
+                                        <!-- RemoteCommand invocado automaticamente por la camara html5-qrcode -->
+                                        <p:remoteCommand name="rcCodigoBarraEscaneado"
+                                                         action="#{cajeroBean.buscarYAgregarPorCodigoBarra}"
+                                                         process="@this"
+                                                         update=":ticketForm :resultadosForm :appMessages"
+                                                         oncomplete="ApbApp.focusBarcodeInput()"/>
+
+                                        <div style="display:flex;gap:8px;">
+                                            <p:inputText id="barcodeInput"
+                                                         value="#{cajeroBean.codigoBarraBusqueda}"
+                                                         placeholder="Escanea o escribe código..."
+                                                         autocomplete="off"
+                                                         style="flex:1;"/>
+                                            <p:commandButton id="btnBuscarBarra"
+                                                             icon="pi pi-plus"
+                                                             title="Agregar por código de barras"
+                                                             action="#{cajeroBean.buscarYAgregarPorCodigoBarra}"
+                                                             process="@form"
+                                                             update="@form :ticketForm :resultadosForm :appMessages"
+                                                             oncomplete="ApbApp.focusBarcodeInput()"
+                                                             styleClass="apb-pf-btn"/>
+                                            <button type="button"
+                                                    id="apbCameraToggleBtn"
+                                                    class="apb-cta-secondary"
+                                                    style="height:44px;padding:0 12px;font-size:0.80rem;"
+                                                    onclick="ApbApp.toggleCameraScanner();">
+                                                <i class="pi pi-camera"></i>
+                                                <span>Cámara</span>
+                                            </button>
+                                        </div>
+                                    </h:form>
+
+                                    <!-- Visor de camara html5-qrcode -->
+                                    <div id="apbCameraStage" class="apb-camera-stage">
+                                        <div id="apbQrReader"></div>
+                                        <div id="apbCameraStatus"
+                                             style="margin-top:8px;font-size:0.75rem;color:var(--apb-text-secondary);text-align:center;">
+                                            Preparando escáner de cámara...
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- MODO 2: BUSQUEDA EN VIVO POR NOMBRE DE PRODUCTO -->
+                                <div class="apb-search-box">
+                                    <div class="apb-search-box-label">
+                                        <span><i class="pi pi-search" style="margin-right:6px;color:var(--apb-primary);"></i>2. Nombre de Producto</span>
+                                        <span class="apb-mini-tag tag-live">En vivo</span>
+                                    </div>
+
+                                    <h:form id="nombreSearchForm">
+                                        <div style="display:flex;gap:8px;">
+                                            <p:inputText id="nombreInput"
+                                                         value="#{cajeroBean.terminoNombreBusqueda}"
+                                                         placeholder="Escribe nombre, SKU o categoría..."
+                                                         autocomplete="off"
+                                                         style="flex:1;">
+                                                <p:ajax event="keyup"
+                                                        delay="250"
+                                                        listener="#{cajeroBean.buscarProductosPorNombre}"
+                                                        update=":resultadosForm"/>
+                                            </p:inputText>
+                                            <p:commandButton icon="pi pi-times"
+                                                             title="Limpiar búsqueda"
+                                                             action="#{cajeroBean.limpiarBusquedaNombre}"
+                                                             process="@this"
+                                                             update="@form :resultadosForm"
+                                                             styleClass="apb-pf-btn-ghost"/>
+                                        </div>
+                                    </h:form>
+                                </div>
+
+                            </div>
+
+                            <!-- LISTADO DE RESULTADOS SEGUN BUSQUEDA -->
+                            <h:form id="resultadosForm">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:0.78rem;color:var(--apb-text-secondary);">
+                                    <span>Productos disponibles (#{cajeroBean.resultadosBusqueda.size()})</span>
+                                    <span>Haz clic en <strong>+ Agregar</strong> para sumar al ticket</span>
+                                </div>
+
+                                <h:panelGroup rendered="#{empty cajeroBean.resultadosBusqueda}" layout="block"
+                                              style="padding:22px;text-align:center;color:var(--apb-text-muted);font-size:0.85rem;border:1px dashed var(--apb-border);border-radius:12px;">
+                                    No se encontraron productos activos para esa búsqueda.
+                                </h:panelGroup>
+
+                                <div class="apb-catalog-results">
+                                    <ui:repeat value="#{cajeroBean.resultadosBusqueda}" var="prod">
+                                        <div class="apb-catalog-row">
+                                            <div style="min-width:0;flex:1;">
+                                                <div style="font-weight:600;font-size:0.90rem;color:var(--apb-text-primary);">
+                                                    #{prod.nombre}
+                                                </div>
+                                                <div style="font-family:var(--apb-font-mono);font-size:0.71rem;color:var(--apb-text-muted);margin-top:2px;">
+                                                    #{prod.categoria ne null ? prod.categoria.nombre : 'General'} · SKU: #{prod.sku} · Barra: #{prod.codigoBarra}
+                                                </div>
+                                            </div>
+
+                                            <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                                                <span class="apb-stock-pill #{prod.stockActual eq 0 ? 'is-empty' : (prod.stockBajo ? 'is-low' : 'is-ok')}">
+                                                    Stock: #{prod.stockActual}
+                                                </span>
+                                                <strong style="font-family:var(--apb-font-display);font-size:0.96rem;color:var(--apb-primary);min-width:74px;text-align:right;">
+                                                    #{cajeroBean.formatoCLP(prod.precioVenta)}
+                                                </strong>
+                                                <p:commandButton value="Agregar"
+                                                                 icon="pi pi-plus"
+                                                                 action="#{cajeroBean.agregarProducto(prod)}"
+                                                                 disabled="#{prod.stockActual le 0}"
+                                                                 process="@this"
+                                                                 update=":ticketForm :appMessages"
+                                                                 styleClass="apb-pf-btn apb-pf-btn-sm"/>
+                                            </div>
+                                        </div>
+                                    </ui:repeat>
+                                </div>
+                            </h:form>
+                        </section>
+
+                        <!-- ASOCIACION DE CLIENTE (RUT xxxxxxxx-x) -->
+                        <section class="apb-glass-panel">
+                            <div class="apb-section-head" style="margin-bottom:6px;">
+                                <h2 class="apb-panel-title" style="margin:0;">
+                                    <i class="pi pi-id-card"></i>
+                                    <span>Cliente (Opcional · Métricas)</span>
+                                </h2>
+                                <span class="apb-mini-tag tag-live">RUT xxxxxxxx-x</span>
+                            </div>
+
+                            <h:form id="clientePosForm" styleClass="apb-rut-box" style="margin-top:8px;">
+                                <div class="apb-rut-row" style="margin-top:0;">
+                                    <div class="apb-rut-input-wrap">
+                                        <p:inputText id="rutCliInput"
+                                                     value="#{cajeroBean.rutClienteBusqueda}"
+                                                     converter="rutConverter"
+                                                     maxlength="10"
+                                                     styleClass="apb-rut-input"
+                                                     placeholder="Buscar RUT Ej: 12345678-5">
+                                            <f:validator validatorId="rutValidator"/>
+                                        </p:inputText>
+                                    </div>
+
+                                    <p:commandButton value="Buscar / Asociar"
+                                                     icon="pi pi-search"
+                                                     action="#{cajeroBean.buscarClientePorRut}"
+                                                     process="@form"
+                                                     update="@form :ticketForm :appMessages"
+                                                     styleClass="apb-pf-btn"/>
+
+                                    <p:commandButton icon="pi pi-times"
+                                                     title="Quitar cliente"
+                                                     action="#{cajeroBean.quitarCliente}"
+                                                     process="@this"
+                                                     update="@form :ticketForm"
+                                                     styleClass="apb-pf-btn-ghost"/>
+                                </div>
+
+                                <div id="apbRutLiveStatus" class="apb-rut-live-badge">
+                                    <i class="pi pi-info-circle"></i>
+                                    <span>Convención: xxxxxxxx-x (sin puntos)</span>
+                                </div>
+                                <p:message for="rutCliInput"/>
+
+                                <!-- Cliente asociado -->
+                                <h:panelGroup layout="block"
+                                              rendered="#{cajeroBean.clienteSeleccionado ne null}"
+                                              style="margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(16,185,129,0.14);border:1px solid rgba(52,211,153,0.38);color:#a7f3d0;font-size:0.83rem;">
+                                    <i class="pi pi-check-circle" style="margin-right:6px;"></i>
+                                    Cliente asociado: <strong>#{cajeroBean.clienteSeleccionado.nombreCompleto}</strong>
+                                    (#{cajeroBean.clienteSeleccionado.rut})
+                                </h:panelGroup>
+
+                                <!-- Alta rapida si el RUT es valido pero no existia -->
+                                <h:panelGroup layout="block"
+                                              rendered="#{cajeroBean.mostrarAltaRapidaCliente}"
+                                              style="margin-top:12px;padding:14px;border-radius:12px;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.34);">
+                                    <div style="font-size:0.82rem;font-weight:600;margin-bottom:10px;color:#bfdbfe;">
+                                        Alta rápida de cliente para RUT #{cajeroBean.rutClienteBusqueda}
+                                    </div>
+                                    <div class="apb-form-grid-2" style="margin-bottom:10px;">
+                                        <p:inputText value="#{cajeroBean.nuevoClienteNombre}" placeholder="Nombre completo *"/>
+                                        <p:inputText value="#{cajeroBean.nuevoClienteTelefono}" placeholder="Teléfono (opcional)"/>
+                                    </div>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                        <p:inputText value="#{cajeroBean.nuevoClienteEmail}" placeholder="Correo electrónico (opcional)" style="flex:1;"/>
+                                        <p:commandButton value="Crear y Asociar"
+                                                         icon="pi pi-user-plus"
+                                                         action="#{cajeroBean.crearYAsociarClienteRapido}"
+                                                         process="@form"
+                                                         update="@form :ticketForm :appMessages"
+                                                         styleClass="apb-pf-btn"/>
+                                    </div>
+                                </h:panelGroup>
+                            </h:form>
+                        </section>
+
+                    </div>
+
+                    <!-- COLUMNA DERECHA: TICKET REAL Y COBRO -->
+                    <aside class="apb-glass-panel">
+                        <h:form id="ticketForm">
+                            <div class="apb-section-head" style="margin-bottom:6px;">
+                                <h2 class="apb-panel-title" style="margin:0;">
+                                    <i class="pi pi-shopping-cart"></i>
+                                    <span>Ticket de Venta</span>
+                                </h2>
+                                <span class="apb-mini-tag tag-pos">#{cajeroBean.totalUnidades} u.</span>
+                            </div>
+
+                            <div style="font-size:0.77rem;color:var(--apb-text-secondary);margin-bottom:8px;">
+                                Cliente:
+                                <strong style="color:var(--apb-text-primary);">
+                                    #{cajeroBean.clienteSeleccionado ne null ? cajeroBean.clienteSeleccionado.nombreCompleto : 'Consumidor Final'}
+                                </strong>
+                            </div>
+
+                            <!-- Lista de productos en carrito -->
+                            <div class="apb-ticket-list">
+                                <h:panelGroup rendered="#{empty cajeroBean.carrito}" layout="block" styleClass="apb-ticket-empty">
+                                    <i class="pi pi-shopping-cart" style="font-size:1.5rem;opacity:0.55;"></i>
+                                    <span>Escanea un código de barras o agrega productos desde la búsqueda por nombre</span>
+                                </h:panelGroup>
+
+                                <ui:repeat value="#{cajeroBean.carrito}" var="item">
+                                    <div class="apb-ticket-row">
+                                        <div style="min-width:0;flex:1;">
+                                            <div style="font-weight:600;font-size:0.84rem;">#{item.productoNombre}</div>
+                                            <div style="font-size:0.73rem;color:var(--apb-text-muted);">
+                                                #{cajeroBean.formatoCLP(item.precioUnitario)} c/u
+                                            </div>
+                                        </div>
+
+                                        <div class="apb-qty-stepper">
+                                            <p:commandButton icon="pi pi-minus"
+                                                             action="#{cajeroBean.decrementarCantidad(item)}"
+                                                             process="@this"
+                                                             update=":ticketForm"
+                                                             styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+                                            <strong style="min-width:22px;text-align:center;">#{item.cantidad}</strong>
+                                            <p:commandButton icon="pi pi-plus"
+                                                             action="#{cajeroBean.incrementarCantidad(item)}"
+                                                             process="@this"
+                                                             update=":ticketForm :appMessages"
+                                                             styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+                                        </div>
+
+                                        <strong style="color:var(--apb-primary);min-width:68px;text-align:right;font-size:0.86rem;">
+                                            #{cajeroBean.formatoCLP(item.subtotal)}
+                                        </strong>
+
+                                        <p:commandButton icon="pi pi-trash"
+                                                         title="Quitar"
+                                                         action="#{cajeroBean.eliminarItem(item)}"
+                                                         process="@this"
+                                                         update=":ticketForm"
+                                                         styleClass="apb-pf-btn-danger apb-pf-btn-sm"/>
+                                    </div>
+                                </ui:repeat>
+                            </div>
+
+                            <!-- Descuento y totales -->
+                            <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                                <div class="apb-field-col">
+                                    <label>Descuento (CLP)</label>
+                                    <p:inputNumber value="#{cajeroBean.descuento}"
+                                                   symbol="$ "
+                                                   decimalPlaces="0"
+                                                   thousandSeparator="."
+                                                   decimalSeparator=","
+                                                   minValue="0">
+                                        <p:ajax event="change" update=":ticketForm"/>
+                                    </p:inputNumber>
+                                </div>
+                                <div class="apb-field-col">
+                                    <label>Subtotal</label>
+                                    <div style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;background:rgba(15,26,52,0.45);border:1px solid var(--apb-border);font-weight:600;">
+                                        #{cajeroBean.formatoCLP(cajeroBean.subtotal)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="apb-ticket-total-box">
+                                <span style="font-size:0.86rem;font-weight:600;color:var(--apb-text-secondary);">TOTAL A PAGAR</span>
+                                <span class="apb-ticket-total-value">#{cajeroBean.formatoCLP(cajeroBean.total)}</span>
+                            </div>
+
+                            <!-- Medio de pago -->
+                            <div style="font-size:0.78rem;color:var(--apb-text-secondary);margin-bottom:8px;font-weight:600;">
+                                Medio de pago
+                            </div>
+                            <div class="apb-pay-grid">
+                                <p:commandLink action="#{cajeroBean.seleccionarMetodoPago('EFECTIVO')}"
+                                               process="@this"
+                                               update=":ticketForm"
+                                               styleClass="apb-pay-option #{cajeroBean.metodoPago eq 'EFECTIVO' ? 'is-selected' : ''}">
+                                    <i class="pi pi-money-bill"></i><span>Efectivo</span>
+                                </p:commandLink>
+                                <p:commandLink action="#{cajeroBean.seleccionarMetodoPago('DEBITO')}"
+                                               process="@this"
+                                               update=":ticketForm"
+                                               styleClass="apb-pay-option #{cajeroBean.metodoPago eq 'DEBITO' ? 'is-selected' : ''}">
+                                    <i class="pi pi-credit-card"></i><span>Débito</span>
+                                </p:commandLink>
+                                <p:commandLink action="#{cajeroBean.seleccionarMetodoPago('CREDITO')}"
+                                               process="@this"
+                                               update=":ticketForm"
+                                               styleClass="apb-pay-option #{cajeroBean.metodoPago eq 'CREDITO' ? 'is-selected' : ''}">
+                                    <i class="pi pi-credit-card"></i><span>Crédito</span>
+                                </p:commandLink>
+                                <p:commandLink action="#{cajeroBean.seleccionarMetodoPago('TRANSFERENCIA')}"
+                                               process="@this"
+                                               update=":ticketForm"
+                                               styleClass="apb-pay-option #{cajeroBean.metodoPago eq 'TRANSFERENCIA' ? 'is-selected' : ''}">
+                                    <i class="pi pi-sync"></i><span>Transferencia</span>
+                                </p:commandLink>
+                            </div>
+
+                            <!-- Pago en efectivo + Vuelto -->
+                            <h:panelGroup id="efectivoPanel" layout="block"
+                                          rendered="#{cajeroBean.metodoPago eq 'EFECTIVO'}"
+                                          style="margin-bottom:14px;padding:12px;border-radius:11px;background:rgba(15,26,52,0.55);border:1px solid var(--apb-border);">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                    <label style="font-size:0.78rem;font-weight:600;color:#cbd5e1;">Efectivo recibido (CLP)</label>
+                                    <p:commandLink value="Monto exacto"
+                                                   action="#{cajeroBean.aplicarMontoExacto}"
+                                                   process="@this"
+                                                   update=":ticketForm"
+                                                   style="font-size:0.75rem;color:var(--apb-primary);font-weight:600;"/>
+                                </div>
+                                <p:inputNumber value="#{cajeroBean.montoPagado}"
+                                               symbol="$ "
+                                               decimalPlaces="0"
+                                               thousandSeparator="."
+                                               decimalSeparator=","
+                                               minValue="0">
+                                    <p:ajax event="change" update="vueltoText"/>
+                                </p:inputNumber>
+                                <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.84rem;">
+                                    <span style="color:var(--apb-text-secondary);">Vuelto:</span>
+                                    <h:outputText id="vueltoText"
+                                                  value="#{cajeroBean.formatoCLP(cajeroBean.vuelto)}"
+                                                  style="font-weight:700;color:#34d399;"/>
+                                </div>
+                            </h:panelGroup>
+
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <p:commandButton value="Cobrar y Registrar Venta"
+                                                 icon="pi pi-check-circle"
+                                                 action="#{cajeroBean.finalizarVenta}"
+                                                 disabled="#{empty cajeroBean.carrito}"
+                                                 process="@form"
+                                                 update=":cajeroRoot :appMessages"
+                                                 styleClass="apb-pf-btn"
+                                                 style="width:100%;height:48px;"/>
+
+                                <p:commandButton value="Vaciar ticket"
+                                                 icon="pi pi-trash"
+                                                 action="#{cajeroBean.vaciarCarrito}"
+                                                 disabled="#{empty cajeroBean.carrito}"
+                                                 process="@this"
+                                                 update=":ticketForm"
+                                                 styleClass="apb-pf-btn-ghost"
+                                                 style="width:100%;height:40px;"/>
+                            </div>
+                        </h:form>
+                    </aside>
+
+                </div>
+
+                <!-- MODAL DE CIERRE Y ARQUEO DE CAJA -->
+                <p:dialog header="Cierre y Arqueo de Caja"
+                          widgetVar="dlgCerrarCaja"
+                          modal="true"
+                          resizable="false"
+                          width="480"
+                          appendTo="@(body)">
+                    <h:form id="cerrarCajaForm">
+                        <div class="apb-session-dl" style="margin-top:0;margin-bottom:16px;">
+                            <div class="apb-session-cell">
+                                <span>Caja Inicial</span>
+                                <strong>#{cajeroBean.formatoCLP(cajeroBean.cajaActual.montoInicial)}</strong>
+                            </div>
+                            <div class="apb-session-cell">
+                                <span>Ventas Efectivo</span>
+                                <strong>#{cajeroBean.formatoCLP(cajeroBean.cajaActual.totalVentasEfectivo)}</strong>
+                            </div>
+                            <div class="apb-session-cell">
+                                <span>Esperado Efectivo</span>
+                                <strong style="color:var(--apb-primary);">#{cajeroBean.formatoCLP(cajeroBean.cajaActual.montoEsperadoCierre)}</strong>
+                            </div>
+                            <div class="apb-session-cell">
+                                <span>Total Ventas Turno</span>
+                                <strong style="color:#34d399;">#{cajeroBean.formatoCLP(cajeroBean.cajaActual.totalVentasGeneral)}</strong>
+                            </div>
+                        </div>
+
+                        <div class="apb-field-col" style="margin-bottom:14px;">
+                            <p:outputLabel for="montoRealCierreInput" value="Efectivo real contado al cierre (CLP)"/>
+                            <p:inputNumber id="montoRealCierreInput"
+                                           value="#{cajeroBean.montoRealCierre}"
+                                           symbol="$ "
+                                           decimalPlaces="0"
+                                           thousandSeparator="."
+                                           decimalSeparator=","
+                                           minValue="0"
+                                           required="true"/>
+                        </div>
+
+                        <div class="apb-field-col" style="margin-bottom:18px;">
+                            <p:outputLabel for="obsCierre" value="Observación de cierre (opcional)"/>
+                            <p:inputTextarea id="obsCierre" value="#{cajeroBean.observacionCierre}" rows="2"/>
+                        </div>
+
+                        <div style="display:flex;justify-content:flex-end;gap:10px;">
+                            <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgCerrarCaja').hide();">
+                                Cancelar
+                            </button>
+                            <p:commandButton value="Confirmar Cierre de Caja"
+                                             icon="pi pi-lock"
+                                             action="#{cajeroBean.cerrarTurnoCaja}"
+                                             process="@form"
+                                             update=":cajeroRoot :appMessages"
+                                             oncomplete="PF('dlgCerrarCaja').hide();"
+                                             styleClass="apb-pf-btn-danger"/>
+                        </div>
+                    </h:form>
+                </p:dialog>
+
+            </h:panelGroup>
+
+        </h:panelGroup>
+
+    </ui:define>
+
+    <!-- Libreria local WebJar html5-qrcode (EAN-13, Code-128, UPC, QR) -->
+    <ui:define name="scriptsExtra">
+        <script src="#{request.contextPath}/webjars/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    </ui:define>
+
+</ui:composition>

@@ -15,6 +15,14 @@
         <class>com.mycompany.apbapp.entities.Cargos</class>
         <class>com.mycompany.apbapp.entities.LoginSessions</class>
         <class>com.mycompany.apbapp.entities.Users</class>
+        <class>com.mycompany.apbapp.entities.Categorias</class>
+        <class>com.mycompany.apbapp.entities.Productos</class>
+        <class>com.mycompany.apbapp.entities.MovimientosStock</class>
+        <class>com.mycompany.apbapp.entities.Clientes</class>
+        <class>com.mycompany.apbapp.entities.CajaTurnos</class>
+        <class>com.mycompany.apbapp.entities.Ventas</class>
+        <class>com.mycompany.apbapp.entities.VentaDetalles</class>
+        <class>com.mycompany.apbapp.entities.AuditLogs</class>
         
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
         <validation-mode>NONE</validation-mode>

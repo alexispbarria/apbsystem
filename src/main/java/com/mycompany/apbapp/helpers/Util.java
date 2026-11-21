@@ -33,6 +33,7 @@ public class Util {
 
     private static final Logger LOG = Logger.getLogger(Util.class.getName());
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+    private static final Pattern RUT_CONVENTION_PATTERN = Pattern.compile("^\\d{7,8}-[0-9K]$");
 
     // ==========================================
     // JSF & PRIMEFACES
@@ -134,36 +135,74 @@ public class Util {
     // VALIDACIONES Y FORMATOS (CHILE & GENERAL)
     // ==========================================
 
-    public static boolean validarRut(String rut_value) {
-        if (rut_value == null || !rut_value.contains("-") || rut_value.length() < 9) {
+    /**
+     * Verifica si el texto cumple la convención de formato de RUT: xxxxxxxx-x
+     * (7 u 8 dígitos sin puntos, guion y dígito verificador 0-9 o K).
+     */
+    public static boolean tieneFormatoRutConvencion(String rutValue) {
+        if (rutValue == null) {
             return false;
         }
-        String[] rut_dv = rut_value.split("-");
-        if (rut_dv.length < 2 || rut_dv[1].length() != 1) {
+        return RUT_CONVENTION_PATTERN.matcher(rutValue.trim().toUpperCase()).matches();
+    }
+
+    /**
+     * Calcula el dígito verificador chileno (Módulo 11) para la parte numérica del RUT.
+     */
+    public static char calcularDvRut(int numero) {
+        int m = 0;
+        int s = 1;
+        for (int n = numero; n != 0; n /= 10) {
+            s = (s + (n % 10) * (9 - (m++ % 6))) % 11;
+        }
+        return (char) (s != 0 ? s + 47 : 'K');
+    }
+
+    /**
+     * Valida un RUT chileno bajo la convención estricta xxxxxxxx-x y su dígito verificador Módulo 11.
+     */
+    public static boolean validarRut(String rutValue) {
+        if (rutValue == null) {
+            return false;
+        }
+        String normalizado = rutValue.trim().toUpperCase();
+        if (!RUT_CONVENTION_PATTERN.matcher(normalizado).matches()) {
+            return false;
+        }
+        String[] partes = normalizado.split("-");
+        if (partes.length != 2 || partes[1].length() != 1) {
             return false;
         }
         try {
-            int rut = Integer.parseInt(rut_dv[0].replace(".", ""));
-            char dv = rut_dv[1].toUpperCase().charAt(0);
-
-            int m = 0, s = 1;
-            for (; rut != 0; rut /= 10) {
-                s = (s + rut % 10 * (9 - m++ % 6)) % 11;
+            int rut = Integer.parseInt(partes[0]);
+            if (rut <= 0) {
+                return false;
             }
-            return dv == (char) (s != 0 ? s + 47 : 75);
+            char dv = partes[1].charAt(0);
+            return dv == calcularDvRut(rut);
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
+    /**
+     * Normaliza un RUT a la convención del sistema: xxxxxxxx-x (sin puntos, DV en mayúscula).
+     * Ejemplo: "12.345.678-k" o "12345678k" -> "12345678-K".
+     */
     public static String formatearRUT(String rutEntrada) {
-        if (rutEntrada == null || rutEntrada.trim().isBlank()) return null;
-        String rutLimpio = rutEntrada.replace(".", "").replace(" ", "").trim().toUpperCase();
-        
-        // Lógica simplificada asumiendo uso interno de validarRut primero...
-        // Mantenemos tu lógica estricta del original
-        // ... (código original de formatearRUT omitido por brevedad, pero validado)
-        return rutLimpio; // Solo como placeholder visual
+        if (rutEntrada == null || rutEntrada.isBlank()) {
+            return null;
+        }
+        String limpio = rutEntrada.replaceAll("[.\\-\\s]", "").toUpperCase();
+        if (limpio.length() < 8 || limpio.length() > 9) {
+            return rutEntrada.trim().toUpperCase();
+        }
+        String cuerpo = limpio.substring(0, limpio.length() - 1);
+        String dv = limpio.substring(limpio.length() - 1);
+        if (!cuerpo.matches("^\\d{7,8}$") || !dv.matches("^[0-9K]$")) {
+            return rutEntrada.trim().toUpperCase();
+        }
+        return cuerpo + "-" + dv;
     }
 
     public static boolean validarEmail(String email_value) {

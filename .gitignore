@@ -1,1 +1,12 @@
 /target/
+
+# ==========================================
+# Entorno Aislado Local (Antigravity CLI + Engram + uv)
+# ==========================================
+.agents/
+.engram/
+.isolated_state/
+.venv/
+agy-docs/
+GEMINI.md
+Start-Agent.ps1

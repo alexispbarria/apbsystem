@@ -2,70 +2,367 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
-      xmlns:p="http://primefaces.org/ui">
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets"
+      lang="es">
+
+<!-- =========================================================================
+     CONFIGURACION RAPIDA DE MAQUETA (EDITA ESTOS TEXTOS EN UN SOLO LUGAR)
+     ========================================================================= -->
+<ui:param name="brandName" value="APB"/>
+<ui:param name="brandHighlight" value="SALES"/>
+<ui:param name="brandTagline" value="SALES CORE · PLATAFORMA COMERCIAL"/>
+<ui:param name="brandVersion" value="MAQUETA v1.0"/>
+<ui:param name="brandDescription" value="Ecosistema inteligente para control de ventas, inventario y seguimiento comercial en tiempo real."/>
+<ui:param name="companyFooter" value="© 2026 APB Sales Core · Acceso Corporativo Restringido"/>
+
+<f:metadata>
+    <f:viewAction action="#{loginBean.showMessage}"/>
+</f:metadata>
 
 <h:head>
-    <title>Iniciar Sesión - Sistema Empresarial</title>
-    <!-- Carga de PrimeFlex vía CDN (Para producción puedes descargarlo o usar WebJars) -->
-    <link rel="stylesheet" href="https://unpkg.com/primeflex@3.3.1/primeflex.min.css" />
+    <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>#{brandName} #{brandHighlight} · Iniciar Sesión</title>
+
+    <!-- Favicon vectorial con el logotipo inventado -->
+    <link rel="icon" type="image/svg+xml" href="#{resource['apb-login:images/apb-logo.svg']}"/>
+
+    <!-- Tipografia futurista opcional (con fallback automatico si no hay internet) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap"/>
+
+    <!-- Iconos locales de PrimeIcons + Hoja de estilos futurista modular -->
+    <h:outputStylesheet name="css/primeicons.css" library="omega-layout"/>
+    <h:outputStylesheet name="css/login-futuristic.css" library="apb-login"/>
 </h:head>
 
-<h:body styleClass="flex align-items-center justify-content-center h-screen surface-ground m-0">
+<h:body styleClass="apb-login-page">
 
-    <!-- Notificaciones flotantes para errores -->
-    <p:growl id="mensajes" showDetail="true" life="4000" />
+    <!-- Notificaciones flotantes estilizadas en cristal oscuro -->
+    <p:growl id="mensajes" showSummary="true" showDetail="true" life="4500" globalOnly="false"/>
 
-    <div class="surface-card p-5 shadow-6 border-round-2xl w-11 sm:w-8 md:w-6 lg:w-4 xl:w-3">
-        <div class="text-center mb-5">
-            <!-- Icono o Logo superior -->
-            <i class="pi pi-bolt text-primary text-5xl mb-3"></i>
-            <div class="text-900 text-3xl font-medium mb-2">Bienvenido de nuevo</div>
-            <span class="text-600 font-medium">Por favor, ingresa tus credenciales</span>
-        </div>
-
-        <h:form id="loginForm">
-            
-            <!-- Campo de Usuario -->
-            <div class="mb-4">
-                <p:outputLabel for="username" value="Usuario" styleClass="block text-900 font-medium mb-2" />
-                <p:inputText id="username" 
-                             value="#{loginBean.user.username}" 
-                             required="true" 
-                             requiredMessage="El usuario es obligatorio"
-                             styleClass="w-full" 
-                             placeholder="Ej: apinilla" />
-            </div>
-
-            <!-- Campo de Contraseña con toggle para ver/ocultar -->
-            <div class="mb-4">
-                <p:outputLabel for="password" value="Contraseña" styleClass="block text-900 font-medium mb-2" />
-                <p:password id="password" 
-                            value="#{loginBean.user.password}" 
-                            required="true" 
-                            requiredMessage="La contraseña es obligatoria"
-                            toggleMask="true" 
-                            styleClass="w-full" 
-                            placeholder="********" />
-            </div>
-
-            <!-- Recordarme & Olvidé contraseña (Visuales, para extender futuro) -->
-            <div class="flex align-items-center justify-content-between mb-5">
-                <div class="flex align-items-center">
-                    <p:selectBooleanCheckbox id="remember" styleClass="mr-2" />
-                    <label for="remember" class="text-600">Recordarme</label>
-                </div>
-                <a href="#" class="font-medium no-underline text-primary">¿Olvidaste tu contraseña?</a>
-            </div>
-
-            <!-- Botón de Ingreso con feedback visual (icono de carga automático al hacer clic si usas AJAX) -->
-            <p:commandButton value="Ingresar" 
-                             icon="pi pi-sign-in" 
-                             action="#{loginBean.login}" 
-                             update="@form mensajes" 
-                             styleClass="w-full py-2 text-lg border-round-lg" />
-        </h:form>
+    <!-- Escena de fondo futurista (cambia data-particles="false" para desactivar la red animada) -->
+    <div id="apbScene" class="apb-scene" data-particles="true" aria-hidden="true">
+        <div class="apb-top-beam"></div>
+        <div class="apb-cyber-grid"></div>
+        <div class="apb-orb apb-orb-1"></div>
+        <div class="apb-orb apb-orb-2"></div>
+        <div class="apb-orb apb-orb-3"></div>
+        <canvas id="apb-particles-canvas"></canvas>
     </div>
 
+    <!-- Contenedor principal -->
+    <main class="apb-auth-wrapper">
+
+        <!-- Agrega la clase "apb-compact-mode" aqui si prefieres una caja de 1 columna -->
+        <section id="apbAuthCard" class="apb-auth-card" aria-label="Portal de autenticación">
+
+            <!-- =============================================================
+                 PANEL IZQUIERDO: MARCA Y MODULOS DEL SISTEMA DE VENTAS
+                 ============================================================= -->
+            <aside class="apb-brand-panel">
+
+                <!-- Indicador de estado -->
+                <div class="apb-status-pill">
+                    <span class="apb-status-dot"></span>
+                    <span>Sistema Activo · #{brandVersion}</span>
+                </div>
+
+                <!-- Identidad visual + Logo inventado -->
+                <div class="apb-brand-hero">
+                    <div class="apb-logo-lockup">
+                        <div class="apb-logo-stage">
+                            <span class="apb-logo-ring" aria-hidden="true"></span>
+                            <h:graphicImage library="apb-login"
+                                            name="images/apb-logo.svg"
+                                            alt="Logotipo #{brandName} #{brandHighlight}"
+                                            styleClass="apb-logo-img"/>
+                        </div>
+                        <div class="apb-brand-titles">
+                            <h1 class="apb-brand-name">
+                                #{brandName} <span class="apb-brand-accent">#{brandHighlight}</span>
+                            </h1>
+                            <span class="apb-brand-sub">#{brandTagline}</span>
+                        </div>
+                    </div>
+
+                    <p class="apb-brand-description">#{brandDescription}</p>
+                </div>
+
+                <!-- Destacados editables de la maqueta comercial -->
+                <div class="apb-feature-list">
+                    <div class="apb-feature-item">
+                        <div class="apb-feature-icon" aria-hidden="true">
+                            <i class="pi pi-chart-line"></i>
+                        </div>
+                        <div class="apb-feature-text">
+                            <strong>Control Comercial Inteligente</strong>
+                            <span>Punto de venta, cotizaciones y trazabilidad en vivo.</span>
+                        </div>
+                    </div>
+
+                    <div class="apb-feature-item">
+                        <div class="apb-feature-icon" aria-hidden="true">
+                            <i class="pi pi-box"></i>
+                        </div>
+                        <div class="apb-feature-text">
+                            <strong>Inventario y Flujo Operativo</strong>
+                            <span>Sincronización centralizada por sucursal y vendedor.</span>
+                        </div>
+                    </div>
+
+                    <div class="apb-feature-item">
+                        <div class="apb-feature-icon" aria-hidden="true">
+                            <i class="pi pi-shield"></i>
+                        </div>
+                        <div class="apb-feature-text">
+                            <strong>Acceso Corporativo Administrado</strong>
+                            <span>Cuentas y permisos gestionados desde el panel interno.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pie tecnico del panel -->
+                <div class="apb-brand-footer">
+                    <span>ENV // SALES-CORE</span>
+                    <span>SESIÓN CIFRADA</span>
+                </div>
+            </aside>
+
+            <!-- =============================================================
+                 PANEL DERECHO: CAJA INTERACTIVA (LOGIN / RECUPERACION)
+                 ============================================================= -->
+            <div class="apb-form-panel">
+
+                <!-- Encabezado compacto visible en dispositivos moviles -->
+                <div class="apb-mobile-brand">
+                    <h:graphicImage library="apb-login"
+                                    name="images/apb-logo.svg"
+                                    alt="Logotipo #{brandName} #{brandHighlight}"/>
+                    <div class="apb-brand-titles">
+                        <span class="apb-brand-name">
+                            #{brandName} <span class="apb-brand-accent">#{brandHighlight}</span>
+                        </span>
+                        <span class="apb-brand-sub">#{brandTagline}</span>
+                    </div>
+                </div>
+
+                <!-- Barra de estado de la vista actual -->
+                <div class="apb-mode-bar">
+                    <span class="apb-mode-chip">
+                        <i id="apbModeChipIcon" class="pi pi-lock"></i>
+                        <span id="apbModeChipText">Acceso Seguro</span>
+                    </span>
+                    <span class="apb-security-tag">
+                        <i class="pi pi-check-circle"></i>
+                        <span>Solo personal autorizado</span>
+                    </span>
+                </div>
+
+                <!-- Escenario con transicion suave entre vistas -->
+                <div id="apbViewsStage" class="apb-views-stage" data-active-view="login">
+
+                    <!-- =====================================================
+                         VISTA 1: INICIO DE SESION TRADICIONAL
+                         ===================================================== -->
+                    <div class="apb-view" data-view="login" aria-hidden="false">
+                        <div class="apb-form-header">
+                            <h2 class="apb-form-title">Bienvenido de vuelta</h2>
+                            <p class="apb-form-subtitle">
+                                Ingresa tus credenciales corporativas para acceder al panel de ventas.
+                            </p>
+                        </div>
+
+                        <h:form id="loginForm">
+                            <p:defaultCommand target="btnLogin"/>
+
+                            <!-- Campo Usuario -->
+                            <div class="apb-field-group">
+                                <div class="apb-label-row">
+                                    <p:outputLabel for="username" value="Usuario" styleClass="apb-field-label"/>
+                                </div>
+                                <div class="apb-input-wrap">
+                                    <i class="pi pi-user apb-field-icon" aria-hidden="true"></i>
+                                    <p:inputText id="username"
+                                                 value="#{loginBean.user.username}"
+                                                 required="true"
+                                                 requiredMessage="Ingresa tu nombre de usuario"
+                                                 autocomplete="username"
+                                                 placeholder="Ej: apinilla"/>
+                                </div>
+                                <p:message for="username"/>
+                            </div>
+
+                            <!-- Campo Contraseña -->
+                            <div class="apb-field-group">
+                                <div class="apb-label-row">
+                                    <p:outputLabel for="password" value="Contraseña" styleClass="apb-field-label"/>
+                                    <span id="apbCapsLockBadge" class="apb-capslock-badge" role="status">
+                                        <i class="pi pi-exclamation-triangle"></i>
+                                        <span>Bloq Mayús</span>
+                                    </span>
+                                </div>
+                                <div class="apb-input-wrap">
+                                    <i class="pi pi-lock apb-field-icon" aria-hidden="true"></i>
+                                    <p:password id="password"
+                                                value="#{loginBean.user.password}"
+                                                required="true"
+                                                requiredMessage="Ingresa tu contraseña"
+                                                toggleMask="true"
+                                                redisplay="false"
+                                                autocomplete="current-password"
+                                                placeholder="••••••••••••"/>
+                                </div>
+                                <p:message for="password"/>
+                            </div>
+
+                            <!-- Opciones tradicionales: Recordarme y Recuperar contraseña -->
+                            <div class="apb-options-row">
+                                <p:selectBooleanCheckbox id="remember"
+                                                         value="#{loginBean.rememberMe}"
+                                                         itemLabel="Recordar usuario"/>
+
+                                <button type="button"
+                                        class="apb-link-btn"
+                                        onclick="ApbLogin.switchView('recovery')">
+                                    ¿Olvidaste tu contraseña?
+                                </button>
+                            </div>
+
+                            <!-- Boton de ingreso AJAX -->
+                            <p:commandButton id="btnLogin"
+                                             value="Iniciar Sesión"
+                                             icon="pi pi-arrow-right"
+                                             iconPos="right"
+                                             action="#{loginBean.login}"
+                                             process="@form"
+                                             update="@form :mensajes"
+                                             onstart="ApbLogin.setLoading('login', true)"
+                                             oncomplete="ApbLogin.handleLoginComplete(xhr, status, args)"
+                                             styleClass="apb-btn-primary"/>
+                        </h:form>
+
+                        <!-- Politica de creacion de cuentas (sin registro publico) -->
+                        <div class="apb-admin-notice" role="note">
+                            <div class="apb-admin-notice-icon" aria-hidden="true">
+                                <i class="pi pi-shield"></i>
+                            </div>
+                            <p>
+                                <strong>¿Necesitas una cuenta?</strong> El registro público está deshabilitado.
+                                Solo el <strong>Administrador</strong> puede crear y asignar usuarios desde el interior del sistema.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- =====================================================
+                         VISTA 2: RECUPERAR CONTRASENA
+                         ===================================================== -->
+                    <div class="apb-view" data-view="recovery" aria-hidden="true">
+                        <button type="button"
+                                class="apb-back-btn"
+                                onclick="ApbLogin.switchView('login')">
+                            <i class="pi pi-arrow-left"></i>
+                            <span>Volver al acceso</span>
+                        </button>
+
+                        <div class="apb-form-header">
+                            <h2 class="apb-form-title">Recuperar acceso</h2>
+                            <p class="apb-form-subtitle">
+                                Ingresa tu usuario o correo corporativo registrado para gestionar el restablecimiento de tu contraseña.
+                            </p>
+                        </div>
+
+                        <h:form id="recoveryForm">
+                            <p:defaultCommand target="btnRecovery"/>
+
+                            <div class="apb-field-group">
+                                <div class="apb-label-row">
+                                    <p:outputLabel for="recoveryIdentifier"
+                                                   value="Usuario o correo electrónico"
+                                                   styleClass="apb-field-label"/>
+                                </div>
+                                <div class="apb-input-wrap">
+                                    <i class="pi pi-envelope apb-field-icon" aria-hidden="true"></i>
+                                    <p:inputText id="recoveryIdentifier"
+                                                 value="#{loginBean.recoveryIdentifier}"
+                                                 required="true"
+                                                 requiredMessage="Ingresa tu usuario o correo corporativo"
+                                                 autocomplete="email"
+                                                 placeholder="Ej: usuario@empresa.cl"/>
+                                </div>
+                                <p:message for="recoveryIdentifier"/>
+                            </div>
+
+                            <p:commandButton id="btnRecovery"
+                                             value="Solicitar recuperación"
+                                             icon="pi pi-send"
+                                             iconPos="right"
+                                             action="#{loginBean.solicitarRecuperacion}"
+                                             process="@form"
+                                             update="@form :recoveryConfirmation :mensajes"
+                                             onstart="ApbLogin.setLoading('recovery', true)"
+                                             oncomplete="ApbLogin.handleRecoveryComplete(xhr, status, args)"
+                                             styleClass="apb-btn-primary"/>
+                        </h:form>
+
+                        <div class="apb-admin-notice" role="note">
+                            <div class="apb-admin-notice-icon" aria-hidden="true">
+                                <i class="pi pi-info-circle"></i>
+                            </div>
+                            <p>
+                                Si no recuerdas tu usuario corporativo o tu cuenta se encuentra bloqueada,
+                                solicita asistencia directa al <strong>Administrador del sistema</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- =====================================================
+                         VISTA 3: CONFIRMACION DE RECUPERACION (MAQUETA)
+                         ===================================================== -->
+                    <div class="apb-view" data-view="recovery-sent" aria-hidden="true">
+                        <h:panelGroup id="recoveryConfirmation" layout="block" styleClass="apb-recovery-success-box">
+                            <div class="apb-success-orb" aria-hidden="true">
+                                <i class="pi pi-check"></i>
+                            </div>
+
+                            <h2 class="apb-form-title">Solicitud registrada</h2>
+                            <p class="apb-form-subtitle">
+                                Si la cuenta coincide con un usuario activo, se enviarán las instrucciones de restablecimiento asociadas a:
+                            </p>
+
+                            <span class="apb-recovery-target">
+                                #{empty loginBean.recoveryIdentifier ? 'Cuenta corporativa' : loginBean.recoveryIdentifier}
+                            </span>
+
+                            <div class="apb-recovery-actions">
+                                <button type="button"
+                                        class="apb-btn-ghost"
+                                        onclick="ApbLogin.switchView('login')">
+                                    <i class="pi pi-arrow-left"></i>
+                                    <span>Volver a iniciar sesión</span>
+                                </button>
+                                <button type="button"
+                                        class="apb-link-btn"
+                                        onclick="ApbLogin.switchView('recovery')">
+                                    Intentar con otro usuario o correo
+                                </button>
+                            </div>
+                        </h:panelGroup>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Pie de pagina editable -->
+        <footer class="apb-page-footer">
+            #{companyFooter}
+        </footer>
+    </main>
+
+    <!-- Script interactivo modular -->
+    <h:outputScript name="js/login-futuristic.js" library="apb-login"/>
 </h:body>
 </html>

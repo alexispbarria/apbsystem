@@ -6,15 +6,13 @@ package com.mycompany.apbapp.entities;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.NamedQueries;
-import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
@@ -31,8 +29,6 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "users")
-@NamedQueries({
-    @NamedQuery(name = "Users.findAll", query = "SELECT u FROM Users u")})
 public class Users implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -87,7 +83,7 @@ public class Users implements Serializable {
     private String rut;
     @OneToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private Set<LoginSessions> loginSessionsSet;
-    @JoinColumn(name = "cargo_id", referencedColumnName = "int")
+    @JoinColumn(name = "cargo_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY)
     private Cargos cargos;
 

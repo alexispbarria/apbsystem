@@ -1,0 +1,421 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="usuarios"/>
+
+    <ui:define name="title">APB SALES · Gestión de Usuarios y Cargos (ADMIN)</ui:define>
+
+    <ui:define name="content">
+
+        <!-- CABECERA -->
+        <div class="apb-pos-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                    <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:34px;padding:0 12px;font-size:0.80rem;">
+                        <i class="pi pi-arrow-left"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <span class="apb-role-pill apb-role-admin">
+                        <i class="pi pi-shield"></i>
+                        <span>Exclusivo Administrador</span>
+                    </span>
+                </div>
+                <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                    Gestión de <span>Usuarios y Cargos</span>
+                </h1>
+                <p class="apb-hero-subtitle" style="margin-top:4px;">
+                    Creación interna de cuentas para trabajadores y administradores con RUT validado (<code>xxxxxxxx-x</code>) y cifrado BCrypt.
+                </p>
+            </div>
+
+            <h:form id="usrTopActions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <p:commandButton value="Nuevo Cargo"
+                                 icon="pi pi-key"
+                                 action="#{usuarioBean.abrirNuevoCargo}"
+                                 process="@this"
+                                 update=":cargoDlgForm"
+                                 oncomplete="PF('dlgCargo').show();"
+                                 styleClass="apb-pf-btn-ghost"/>
+                <p:commandButton value="Crear Usuario"
+                                 icon="pi pi-user-plus"
+                                 action="#{usuarioBean.abrirNuevoUsuario}"
+                                 process="@this"
+                                 update=":usuarioDlgForm"
+                                 oncomplete="PF('dlgUsuario').show();"
+                                 styleClass="apb-pf-btn"/>
+            </h:form>
+        </div>
+
+        <h:form id="usuariosForm">
+
+            <!-- MINI KPIS DE CUENTAS -->
+            <section class="apb-kpi-grid" style="margin-bottom:20px;">
+                <article class="apb-kpi-card" style="--stagger:1; --kpi-accent:#00e5ff;">
+                    <div class="apb-kpi-top">
+                        <span class="apb-kpi-icon"><i class="pi pi-users"></i></span>
+                        <span class="apb-mini-tag tag-pos">Total</span>
+                    </div>
+                    <div class="apb-kpi-label">Cuentas en Listado</div>
+                    <div class="apb-kpi-value">#{usuarioBean.totalUsuarios}</div>
+                </article>
+
+                <article class="apb-kpi-card" style="--stagger:2; --kpi-accent:#10b981;">
+                    <div class="apb-kpi-top">
+                        <span class="apb-kpi-icon"><i class="pi pi-check-circle"></i></span>
+                        <span class="apb-mini-tag tag-live">Habilitados</span>
+                    </div>
+                    <div class="apb-kpi-label">Usuarios Activos</div>
+                    <div class="apb-kpi-value">#{usuarioBean.totalActivos}</div>
+                </article>
+
+                <article class="apb-kpi-card" style="--stagger:3; --kpi-accent:#a78bfa;">
+                    <div class="apb-kpi-top">
+                        <span class="apb-kpi-icon" style="background:var(--apb-admin-bg);border-color:var(--apb-admin-border);">
+                            <i class="pi pi-shield"></i>
+                        </span>
+                        <span class="apb-mini-tag tag-admin">ADMIN</span>
+                    </div>
+                    <div class="apb-kpi-label">Administradores</div>
+                    <div class="apb-kpi-value">#{usuarioBean.totalAdmins}</div>
+                </article>
+
+                <article class="apb-kpi-card" style="--stagger:4; --kpi-accent:#34d399;">
+                    <div class="apb-kpi-top">
+                        <span class="apb-kpi-icon"><i class="pi pi-id-card"></i></span>
+                        <span class="apb-mini-tag tag-live">Operativos</span>
+                    </div>
+                    <div class="apb-kpi-label">Trabajadores / Cajeros</div>
+                    <div class="apb-kpi-value">#{usuarioBean.totalTrabajadores}</div>
+                </article>
+            </section>
+
+            <!-- FILTROS -->
+            <div class="apb-filter-bar">
+                <div class="apb-field-col" style="grid-column: span 2;">
+                    <label>Buscar por nombre, usuario, RUT o correo</label>
+                    <p:inputText value="#{usuarioBean.filtroTexto}" placeholder="Ej: Juan, jperez, 12345678-5...">
+                        <p:ajax event="keyup" delay="250" listener="#{usuarioBean.buscar}" update="tablaUsuarios"/>
+                    </p:inputText>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Cargo</label>
+                    <p:selectOneMenu value="#{usuarioBean.filtroCargoId}">
+                        <f:selectItem itemLabel="Todos los cargos" itemValue="#{null}"/>
+                        <f:selectItems value="#{usuarioBean.cargos}" var="c" itemLabel="#{c.nombre} (#{c.codigo})" itemValue="#{c.id}"/>
+                        <p:ajax listener="#{usuarioBean.buscar}" update="@form"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Estado</label>
+                    <p:selectOneMenu value="#{usuarioBean.filtroEstado}">
+                        <f:selectItem itemLabel="Todos" itemValue="TODOS"/>
+                        <f:selectItem itemLabel="Solo Activos" itemValue="ACTIVOS"/>
+                        <f:selectItem itemLabel="Solo Inactivos" itemValue="INACTIVOS"/>
+                        <p:ajax listener="#{usuarioBean.buscar}" update="@form"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <p:commandButton value="Buscar"
+                                     icon="pi pi-search"
+                                     action="#{usuarioBean.buscar}"
+                                     process="@form"
+                                     update="@form"
+                                     styleClass="apb-pf-btn"
+                                     style="flex:1;"/>
+                    <p:commandButton icon="pi pi-refresh"
+                                     title="Limpiar filtros"
+                                     action="#{usuarioBean.limpiarFiltros}"
+                                     process="@this"
+                                     update="@form"
+                                     styleClass="apb-pf-btn-ghost"/>
+                </div>
+            </div>
+
+            <!-- TABLA DE USUARIOS -->
+            <p:dataTable id="tablaUsuarios"
+                         value="#{usuarioBean.usuarios}"
+                         var="u"
+                         paginator="true"
+                         rows="12"
+                         paginatorPosition="bottom"
+                         emptyMessage="No se encontraron usuarios para los filtros seleccionados.">
+
+                <p:column headerText="Usuario">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span class="apb-avatar #{usuarioBean.isCuentaAdmin(u) ? 'apb-role-admin' : 'apb-role-worker'}">
+                            #{usuarioBean.getInicialesUsuario(u)}
+                        </span>
+                        <div>
+                            <div style="font-weight:600;color:var(--apb-text-primary);">
+                                #{u.fullName}
+                                <h:panelGroup rendered="#{usuarioBean.isEsUsuarioActual(u)}">
+                                    <span class="apb-mini-tag tag-pos" style="margin-left:6px;">Tú</span>
+                                </h:panelGroup>
+                            </div>
+                            <div style="font-size:0.76rem;color:var(--apb-text-secondary);">
+                                @#{u.username} · #{u.email}
+                            </div>
+                        </div>
+                    </div>
+                </p:column>
+
+                <p:column headerText="RUT" style="width:135px;">
+                    <span style="font-family:var(--apb-font-mono);color:var(--apb-primary);font-weight:600;font-size:0.82rem;">
+                        #{u.rut}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Perfil / Cargo" style="width:185px;">
+                    <span class="apb-role-pill #{usuarioBean.isCuentaAdmin(u) ? 'apb-role-admin' : 'apb-role-worker'}">
+                        <i class="pi #{usuarioBean.isCuentaAdmin(u) ? 'pi-shield' : 'pi-id-card'}"></i>
+                        <span>#{u.cargos ne null ? u.cargos.nombre : (usuarioBean.isCuentaAdmin(u) ? 'Administrador' : 'Trabajador')}</span>
+                    </span>
+                </p:column>
+
+                <p:column headerText="Estado" style="width:110px;text-align:center;">
+                    <span class="apb-stock-pill #{u.enabled ? 'is-ok' : 'is-empty'}">
+                        #{u.enabled ? 'Activo' : 'Inactivo'}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Creado" style="width:125px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.76rem;color:var(--apb-text-muted);">
+                        <h:outputText value="#{u.created}">
+                            <f:convertDateTime pattern="dd/MM/yyyy"/>
+                        </h:outputText>
+                    </span>
+                </p:column>
+
+                <p:column headerText="Acciones" style="width:170px;text-align:center;">
+                    <div style="display:inline-flex;gap:6px;">
+                        <p:commandButton icon="pi pi-pencil"
+                                         title="Editar datos y cargo"
+                                         action="#{usuarioBean.abrirEditarUsuario(u)}"
+                                         process="@this"
+                                         update=":usuarioDlgForm"
+                                         oncomplete="PF('dlgUsuario').show();"
+                                         styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+
+                        <p:commandButton icon="pi pi-key"
+                                         title="Restablecer contraseña"
+                                         action="#{usuarioBean.abrirResetPassword(u)}"
+                                         process="@this"
+                                         update=":resetPassDlgForm"
+                                         oncomplete="PF('dlgResetPassword').show();"
+                                         styleClass="apb-pf-btn apb-pf-btn-sm"/>
+
+                        <p:commandButton icon="pi #{u.enabled ? 'pi-ban' : 'pi-check'}"
+                                         title="#{u.enabled ? 'Desactivar cuenta' : 'Activar cuenta'}"
+                                         disabled="#{usuarioBean.isEsUsuarioActual(u)}"
+                                         action="#{usuarioBean.alternarEstadoUsuario(u)}"
+                                         process="@this"
+                                         update=":usuariosForm :appMessages"
+                                         styleClass="#{u.enabled ? 'apb-pf-btn-danger' : 'apb-pf-btn'} apb-pf-btn-sm"/>
+                    </div>
+                </p:column>
+
+            </p:dataTable>
+
+        </h:form>
+
+        <!-- =================================================================
+             MODAL 1: CREAR / EDITAR USUARIO
+             ================================================================= -->
+        <p:dialog header="#{usuarioBean.usuarioForm.id eq null ? 'Crear Nueva Cuenta de Usuario' : 'Editar Cuenta de Usuario'}"
+                  widgetVar="dlgUsuario"
+                  modal="true"
+                  resizable="false"
+                  width="560"
+                  appendTo="@(body)">
+            <h:form id="usuarioDlgForm">
+
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Nombre Completo *</label>
+                        <p:inputText value="#{usuarioBean.usuarioForm.fullName}"
+                                     required="true"
+                                     requiredMessage="El nombre completo es obligatorio"
+                                     placeholder="Ej: Camila Rojas"/>
+                    </div>
+
+                    <div class="apb-field-col">
+                        <label>RUT (xxxxxxxx-x) *</label>
+                        <p:inputText id="rutUsuarioInput"
+                                     value="#{usuarioBean.usuarioForm.rut}"
+                                     converter="rutConverter"
+                                     maxlength="10"
+                                     required="true"
+                                     requiredMessage="El RUT es obligatorio"
+                                     styleClass="apb-rut-input"
+                                     placeholder="Ej: 12345678-5">
+                            <f:validator validatorId="rutValidator"/>
+                        </p:inputText>
+                        <div id="apbRutLiveStatus" class="apb-rut-live-badge" style="margin-top:2px;">
+                            <i class="pi pi-info-circle"></i>
+                            <span>Convención: xxxxxxxx-x</span>
+                        </div>
+                        <p:message for="rutUsuarioInput"/>
+                    </div>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Nombre de Usuario (login) *</label>
+                        <p:inputText value="#{usuarioBean.usuarioForm.username}"
+                                     required="true"
+                                     requiredMessage="El nombre de usuario es obligatorio"
+                                     placeholder="Ej: crojas"/>
+                    </div>
+
+                    <div class="apb-field-col">
+                        <label>Correo Electrónico *</label>
+                        <p:inputText value="#{usuarioBean.usuarioForm.email}"
+                                     required="true"
+                                     requiredMessage="El correo es obligatorio"
+                                     placeholder="Ej: crojas@empresa.cl"/>
+                    </div>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:14px;">
+                    <div class="apb-field-col">
+                        <label>Cargo / Nivel de Acceso *</label>
+                        <p:selectOneMenu value="#{usuarioBean.cargoIdSeleccionado}" required="true">
+                            <f:selectItems value="#{usuarioBean.cargos}" var="c" itemLabel="#{c.nombre} (#{c.codigo})" itemValue="#{c.id}"/>
+                        </p:selectOneMenu>
+                    </div>
+
+                    <h:panelGroup layout="block" styleClass="apb-field-col" rendered="#{usuarioBean.usuarioForm.id ne null}">
+                        <label>Estado de la cuenta</label>
+                        <div style="height:44px;display:flex;align-items:center;">
+                            <p:selectBooleanCheckbox value="#{usuarioBean.usuarioForm.enabled}" itemLabel="Cuenta activa"/>
+                        </div>
+                    </h:panelGroup>
+                </div>
+
+                <!-- Contraseña inicial al crear (o cambio opcional al editar) -->
+                <div style="padding:14px;border-radius:12px;background:rgba(15,26,52,0.55);border:1px solid var(--apb-border);margin-bottom:16px;">
+                    <div style="font-size:0.78rem;font-weight:600;color:var(--apb-primary);margin-bottom:10px;">
+                        <i class="pi pi-lock" style="margin-right:6px;"></i>
+                        #{usuarioBean.usuarioForm.id eq null ? 'Contraseña inicial (mínimo 6 caracteres) *' : 'Cambiar contraseña (opcional — déjalo vacío para mantener la actual)'}
+                    </div>
+                    <div class="apb-form-grid-2">
+                        <div class="apb-field-col">
+                            <label>Contraseña</label>
+                            <p:password value="#{usuarioBean.passwordNueva}"
+                                        toggleMask="true"
+                                        redisplay="false"
+                                        placeholder="••••••••"/>
+                        </div>
+                        <div class="apb-field-col">
+                            <label>Confirmar contraseña</label>
+                            <p:password value="#{usuarioBean.passwordConfirmar}"
+                                        toggleMask="true"
+                                        redisplay="false"
+                                        placeholder="••••••••"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgUsuario').hide();">
+                        Cancelar
+                    </button>
+                    <p:commandButton value="#{usuarioBean.usuarioForm.id eq null ? 'Crear Cuenta' : 'Guardar Cambios'}"
+                                     icon="pi pi-check"
+                                     action="#{usuarioBean.guardarUsuario}"
+                                     process="@form"
+                                     update="@form :usuariosForm :appMessages"
+                                     styleClass="apb-pf-btn"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- =================================================================
+             MODAL 2: RESTABLECER CONTRASENA
+             ================================================================= -->
+        <p:dialog header="Restablecer Contraseña"
+                  widgetVar="dlgResetPassword"
+                  modal="true"
+                  resizable="false"
+                  width="440"
+                  appendTo="@(body)">
+            <h:form id="resetPassDlgForm">
+                <h:panelGroup rendered="#{usuarioBean.usuarioReset ne null}">
+                    <div class="apb-session-cell" style="margin-bottom:14px;">
+                        <span>Cuenta seleccionada</span>
+                        <strong>#{usuarioBean.usuarioReset.fullName} (@#{usuarioBean.usuarioReset.username})</strong>
+                    </div>
+
+                    <div class="apb-field-col" style="margin-bottom:12px;">
+                        <label>Nueva contraseña (mín. 6 caracteres) *</label>
+                        <p:password value="#{usuarioBean.resetPasswordNueva}" toggleMask="true" redisplay="false" required="true"/>
+                    </div>
+
+                    <div class="apb-field-col" style="margin-bottom:16px;">
+                        <label>Confirmar nueva contraseña *</label>
+                        <p:password value="#{usuarioBean.resetPasswordConfirmar}" toggleMask="true" redisplay="false" required="true"/>
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;gap:10px;">
+                        <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgResetPassword').hide();">
+                            Cancelar
+                        </button>
+                        <p:commandButton value="Restablecer Clave"
+                                         icon="pi pi-key"
+                                         action="#{usuarioBean.confirmarResetPassword}"
+                                         process="@form"
+                                         update="@form :appMessages"
+                                         styleClass="apb-pf-btn"/>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <!-- =================================================================
+             MODAL 3: NUEVO CARGO
+             ================================================================= -->
+        <p:dialog header="Crear Nuevo Cargo"
+                  widgetVar="dlgCargo"
+                  modal="true"
+                  resizable="false"
+                  width="430"
+                  appendTo="@(body)">
+            <h:form id="cargoDlgForm">
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>Código del Cargo *</label>
+                    <p:inputText value="#{usuarioBean.cargoForm.codigo}"
+                                 required="true"
+                                 placeholder="Ej: CAJERO, VENDEDOR, SUPERVISOR"/>
+                </div>
+                <div class="apb-field-col" style="margin-bottom:16px;">
+                    <label>Nombre Descriptivo *</label>
+                    <p:inputText value="#{usuarioBean.cargoForm.nombre}"
+                                 required="true"
+                                 placeholder="Ej: Cajero de Sucursal"/>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgCargo').hide();">
+                        Cancelar
+                    </button>
+                    <p:commandButton value="Guardar Cargo"
+                                     icon="pi pi-check"
+                                     action="#{usuarioBean.guardarCargo}"
+                                     process="@form"
+                                     update="@form :usuariosForm :appMessages"
+                                     styleClass="apb-pf-btn"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+    </ui:define>
+
+</ui:composition>

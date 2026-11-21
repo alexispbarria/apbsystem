@@ -1,0 +1,237 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="ventas"/>
+
+    <ui:define name="title">APB SALES · Historial de Ventas</ui:define>
+
+    <ui:define name="content">
+
+        <div class="apb-pos-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                    <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:34px;padding:0 12px;font-size:0.80rem;">
+                        <i class="pi pi-arrow-left"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <span class="apb-mini-tag tag-live">
+                        #{sessionBean.adminView ? 'Vista Global (ADMIN)' : 'Mis Ventas'}
+                    </span>
+                </div>
+                <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                    Historial de <span>Ventas</span>
+                </h1>
+            </div>
+
+            <a href="#{request.contextPath}/view/cajero/index.hsm" class="apb-cta-primary" style="height:42px;">
+                <i class="pi pi-desktop"></i>
+                <span>Ir a Cajero</span>
+            </a>
+        </div>
+
+        <h:form id="ventasForm">
+
+            <div class="apb-filter-bar">
+                <div class="apb-field-col">
+                    <label>Folio</label>
+                    <p:inputText value="#{ventaHistorialBean.filtroFolio}" placeholder="Ej: VTA-2026..."/>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Método de pago</label>
+                    <p:selectOneMenu value="#{ventaHistorialBean.filtroMetodoPago}">
+                        <f:selectItem itemLabel="Todos" itemValue="TODOS"/>
+                        <f:selectItem itemLabel="Efectivo" itemValue="EFECTIVO"/>
+                        <f:selectItem itemLabel="Débito" itemValue="DEBITO"/>
+                        <f:selectItem itemLabel="Crédito" itemValue="CREDITO"/>
+                        <f:selectItem itemLabel="Transferencia" itemValue="TRANSFERENCIA"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <div class="apb-field-col">
+                    <label>Estado</label>
+                    <p:selectOneMenu value="#{ventaHistorialBean.filtroEstado}">
+                        <f:selectItem itemLabel="Todos" itemValue="TODOS"/>
+                        <f:selectItem itemLabel="Completada" itemValue="COMPLETADA"/>
+                        <f:selectItem itemLabel="Anulada" itemValue="ANULADA"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <p:commandButton value="Buscar"
+                                     icon="pi pi-search"
+                                     action="#{ventaHistorialBean.buscar}"
+                                     process="@form"
+                                     update="@form"
+                                     styleClass="apb-pf-btn"
+                                     style="flex:1;"/>
+                    <p:commandButton icon="pi pi-refresh"
+                                     title="Limpiar"
+                                     action="#{ventaHistorialBean.limpiarFiltros}"
+                                     process="@this"
+                                     update="@form"
+                                     styleClass="apb-pf-btn-ghost"/>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:0.84rem;color:var(--apb-text-secondary);flex-wrap:wrap;gap:10px;">
+                <span>Ventas completadas en listado: <strong>#{ventaHistorialBean.cantidadCompletadasListado}</strong></span>
+                <span>Total acumulado: <strong style="color:#34d399;font-size:1rem;">#{ventaHistorialBean.formatoCLP(ventaHistorialBean.montoCompletadasListado)}</strong></span>
+            </div>
+
+            <p:dataTable id="tablaVentas"
+                         value="#{ventaHistorialBean.ventas}"
+                         var="v"
+                         paginator="true"
+                         rows="12"
+                         paginatorPosition="bottom"
+                         emptyMessage="No hay ventas registradas para los filtros seleccionados.">
+
+                <p:column headerText="Folio" style="width:190px;">
+                    <span style="font-family:var(--apb-font-mono);color:var(--apb-primary);font-weight:600;font-size:0.80rem;">
+                        #{v.folio}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Fecha" style="width:140px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.78rem;color:var(--apb-text-secondary);">
+                        <h:outputText value="#{v.created}">
+                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm"/>
+                        </h:outputText>
+                    </span>
+                </p:column>
+
+                <p:column headerText="Vendedor" style="width:130px;">
+                    <span>@#{v.usuario ne null ? v.usuario.username : '-'}</span>
+                </p:column>
+
+                <p:column headerText="Cliente">
+                    <span>#{v.cliente ne null ? v.cliente.nombreCompleto : 'Consumidor Final'}</span>
+                    <div style="font-family:var(--apb-font-mono);font-size:0.72rem;color:var(--apb-text-muted);">
+                        #{v.cliente ne null ? v.cliente.rut : ''}
+                    </div>
+                </p:column>
+
+                <p:column headerText="Pago" style="width:125px;">
+                    <span class="apb-mini-tag tag-pos">#{v.metodoPago}</span>
+                </p:column>
+
+                <p:column headerText="Total" style="width:120px;text-align:right;">
+                    <strong style="color:var(--apb-text-primary);">#{ventaHistorialBean.formatoCLP(v.total)}</strong>
+                </p:column>
+
+                <p:column headerText="Estado" style="width:115px;text-align:center;">
+                    <span class="apb-mini-tag #{v.estado eq 'COMPLETADA' ? 'tag-live' : 'tag-admin'}">
+                        #{v.estado}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Acciones" style="width:120px;text-align:center;">
+                    <div style="display:inline-flex;gap:6px;">
+                        <p:commandButton icon="pi pi-eye"
+                                         title="Ver productos vendidos"
+                                         action="#{ventaHistorialBean.verDetalle(v.id)}"
+                                         process="@this"
+                                         update=":detalleVentaForm"
+                                         oncomplete="PF('dlgDetalleVenta').show();"
+                                         styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+
+                        <p:commandButton icon="pi pi-ban"
+                                         title="Anular venta y restaurar stock"
+                                         rendered="#{sessionBean.adminView and v.estado eq 'COMPLETADA'}"
+                                         action="#{ventaHistorialBean.prepararAnulacion(v)}"
+                                         process="@this"
+                                         update=":anularVentaForm"
+                                         oncomplete="PF('dlgAnularVenta').show();"
+                                         styleClass="apb-pf-btn-danger apb-pf-btn-sm"/>
+                    </div>
+                </p:column>
+
+            </p:dataTable>
+
+        </h:form>
+
+        <!-- MODAL DETALLE DE VENTA -->
+        <p:dialog header="Detalle de Venta"
+                  widgetVar="dlgDetalleVenta"
+                  modal="true"
+                  resizable="false"
+                  width="600"
+                  appendTo="@(body)">
+            <h:form id="detalleVentaForm">
+                <h:panelGroup rendered="#{ventaHistorialBean.ventaDetalle ne null}">
+                    <div class="apb-session-dl" style="margin-top:0;margin-bottom:14px;">
+                        <div class="apb-session-cell">
+                            <span>Folio</span>
+                            <strong>#{ventaHistorialBean.ventaDetalle.folio}</strong>
+                        </div>
+                        <div class="apb-session-cell">
+                            <span>Total / Método</span>
+                            <strong style="color:var(--apb-primary);">
+                                #{ventaHistorialBean.formatoCLP(ventaHistorialBean.ventaDetalle.total)} (#{ventaHistorialBean.ventaDetalle.metodoPago})
+                            </strong>
+                        </div>
+                    </div>
+
+                    <p:dataTable value="#{ventaHistorialBean.ventaDetalle.detalles}" var="det">
+                        <p:column headerText="Producto">
+                            <strong>#{det.productoNombre}</strong>
+                            <div style="font-family:var(--apb-font-mono);font-size:0.72rem;color:var(--apb-text-muted);">
+                                #{det.codigoBarra}
+                            </div>
+                        </p:column>
+                        <p:column headerText="Cant." style="width:70px;text-align:center;">
+                            <strong>#{det.cantidad}</strong>
+                        </p:column>
+                        <p:column headerText="Unit." style="width:100px;text-align:right;">
+                            #{ventaHistorialBean.formatoCLP(det.precioUnitario)}
+                        </p:column>
+                        <p:column headerText="Subtotal" style="width:110px;text-align:right;">
+                            <strong style="color:var(--apb-primary);">#{ventaHistorialBean.formatoCLP(det.subtotal)}</strong>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <!-- MODAL ANULACION DE VENTA (ADMIN) -->
+        <p:dialog header="Anular Venta y Restaurar Stock"
+                  widgetVar="dlgAnularVenta"
+                  modal="true"
+                  resizable="false"
+                  width="460"
+                  rendered="#{sessionBean.adminView}"
+                  appendTo="@(body)">
+            <h:form id="anularVentaForm">
+                <h:panelGroup rendered="#{ventaHistorialBean.ventaPorAnular ne null}">
+                    <p style="margin-top:0;font-size:0.86rem;color:var(--apb-text-secondary);">
+                        Se anulará la venta <strong>#{ventaHistorialBean.ventaPorAnular.folio}</strong> por
+                        <strong>#{ventaHistorialBean.formatoCLP(ventaHistorialBean.ventaPorAnular.total)}</strong>.
+                        Las unidades vendidas se devolverán automáticamente al inventario y quedará registro en auditoría.
+                    </p>
+                    <div class="apb-field-col" style="margin-bottom:16px;">
+                        <label>Motivo de anulación</label>
+                        <p:inputText value="#{ventaHistorialBean.motivoAnulacion}" placeholder="Ej: Error de digitación / devolución cliente"/>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:10px;">
+                        <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgAnularVenta').hide();">Cancelar</button>
+                        <p:commandButton value="Confirmar Anulación"
+                                         icon="pi pi-ban"
+                                         action="#{ventaHistorialBean.confirmarAnulacion}"
+                                         process="@form"
+                                         update=":ventasForm :appMessages"
+                                         styleClass="apb-pf-btn-danger"/>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+    </ui:define>
+
+</ui:composition>

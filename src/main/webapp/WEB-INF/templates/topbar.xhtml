@@ -1,0 +1,321 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets">
+
+    <header class="apb-topbar">
+        <h:form id="topbarForm" styleClass="apb-topbar-form">
+            <div class="apb-topbar-inner">
+
+                <!-- IZQUIERDA: LOGO Y MARCA -->
+                <a href="#{request.contextPath}/view/mailbox/index.hsm" class="apb-topbar-brand" title="Ir al Dashboard">
+                    <h:graphicImage library="apb-login"
+                                    name="images/apb-logo.svg"
+                                    alt="APB Sales Core"
+                                    styleClass="apb-topbar-logo"/>
+                    <span class="apb-topbar-brand-text">
+                        <span class="apb-topbar-title">APB <span>SALES</span></span>
+                        <span class="apb-topbar-sub">CORE v1.0</span>
+                    </span>
+                </a>
+
+                <!-- CENTRO: NAVEGACION CON MENUS DROPDOWN SEGUN ROL -->
+                <nav class="apb-nav" aria-label="Navegación principal">
+
+                    <!-- Inicio / Dashboard -->
+                    <div class="apb-nav-item">
+                        <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                           class="apb-nav-link #{activePage eq 'dashboard' ? 'is-active' : ''}">
+                            <i class="pi pi-th-large"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </div>
+
+                    <!-- Dropdown Ventas / Operaciones (Visible para ADMIN y TRABAJADOR) -->
+                    <div class="apb-nav-item apb-dropdown">
+                        <button type="button"
+                                class="apb-nav-trigger apb-dropdown-trigger #{activePage eq 'cajero' or activePage eq 'ventas' or activePage eq 'clientes' ? 'is-active' : ''}"
+                                aria-expanded="false">
+                            <i class="pi pi-shopping-cart"></i>
+                            <span>Ventas</span>
+                            <i class="pi pi-chevron-down apb-chevron"></i>
+                        </button>
+
+                        <div class="apb-dropdown-menu" role="menu">
+                            <div class="apb-dropdown-header">
+                                <span>Operación Comercial</span>
+                                <span>POS</span>
+                            </div>
+
+                            <a href="#{request.contextPath}/view/cajero/index.hsm"
+                               class="apb-dropdown-link is-featured"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon">
+                                    <i class="pi pi-desktop"></i>
+                                </span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Pantalla de Cajero (POS)</span>
+                                        <span class="apb-mini-tag tag-pos">POS</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">Caja inicial, escáner de barras y cobro real</span>
+                                </span>
+                            </a>
+
+                            <a href="#{request.contextPath}/view/ventas/index.hsm"
+                               class="apb-dropdown-link"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon"><i class="pi pi-ticket"></i></span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Historial de Ventas</span>
+                                        <span class="apb-mini-tag tag-live">Activo</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">Folios, detalle de ítems y anulaciones</span>
+                                </span>
+                            </a>
+
+                            <a href="#{request.contextPath}/view/clientes/index.hsm"
+                               class="apb-dropdown-link"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon"><i class="pi pi-users"></i></span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Clientes</span>
+                                        <span class="apb-mini-tag tag-live">Activo</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">RUT xxxxxxxx-x y métricas de compra</span>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Catalogo / Inventario -->
+                    <div class="apb-nav-item apb-dropdown">
+                        <button type="button"
+                                class="apb-nav-trigger apb-dropdown-trigger #{activePage eq 'inventario' ? 'is-active' : ''}"
+                                aria-expanded="false">
+                            <i class="pi pi-box"></i>
+                            <span>Inventario</span>
+                            <i class="pi pi-chevron-down apb-chevron"></i>
+                        </button>
+
+                        <div class="apb-dropdown-menu" role="menu">
+                            <div class="apb-dropdown-header">
+                                <span>Productos y Stock</span>
+                                <span>CATÁLOGO</span>
+                            </div>
+
+                            <a href="#{request.contextPath}/view/inventario/index.hsm"
+                               class="apb-dropdown-link"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon"><i class="pi pi-search"></i></span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Catálogo y Precios</span>
+                                        <span class="apb-mini-tag tag-live">Activo</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">Consulta de códigos de barra y stock actual</span>
+                                </span>
+                            </a>
+
+                            <h:panelGroup rendered="#{sessionBean.adminView}">
+                                <div class="apb-dropdown-divider"></div>
+                                <a href="#{request.contextPath}/view/inventario/index.hsm"
+                                   class="apb-dropdown-link is-admin-item"
+                                   role="menuitem">
+                                    <span class="apb-dropdown-icon"><i class="pi pi-database"></i></span>
+                                    <span class="apb-dropdown-body">
+                                        <span class="apb-dropdown-title-row">
+                                            <span class="apb-dropdown-title">Administrar Stock y Kardex</span>
+                                            <span class="apb-mini-tag tag-admin">Admin</span>
+                                        </span>
+                                        <span class="apb-dropdown-desc">Altas de productos, categorías y ajustes de stock</span>
+                                    </span>
+                                </a>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Administracion (EXCLUSIVO PARA ADMIN) -->
+                    <h:panelGroup layout="block" styleClass="apb-nav-item apb-dropdown" rendered="#{sessionBean.adminView}">
+                        <button type="button"
+                                class="apb-nav-trigger apb-nav-admin apb-dropdown-trigger #{activePage eq 'logs' or activePage eq 'usuarios' ? 'is-active' : ''}"
+                                aria-expanded="false">
+                            <i class="pi pi-shield"></i>
+                            <span>Administración</span>
+                            <i class="pi pi-chevron-down apb-chevron"></i>
+                        </button>
+
+                        <div class="apb-dropdown-menu" role="menu">
+                            <div class="apb-dropdown-header">
+                                <span>Control Exclusivo</span>
+                                <span class="apb-mini-tag tag-admin">ADMIN</span>
+                            </div>
+
+                            <a href="#{request.contextPath}/view/admin/usuarios.hsm"
+                               class="apb-dropdown-link is-admin-item is-featured"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon"><i class="pi pi-user-plus"></i></span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Usuarios y Cargos</span>
+                                        <span class="apb-mini-tag tag-live">Activo</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">Crear cuentas de trabajadores, roles y claves</span>
+                                </span>
+                            </a>
+
+                            <a href="#{request.contextPath}/view/admin/logs.hsm"
+                               class="apb-dropdown-link is-admin-item"
+                               role="menuitem">
+                                <span class="apb-dropdown-icon"><i class="pi pi-history"></i></span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title-row">
+                                        <span class="apb-dropdown-title">Logs de Auditoría</span>
+                                        <span class="apb-mini-tag tag-live">Activo</span>
+                                    </span>
+                                    <span class="apb-dropdown-desc">Registro de cada acción y usuario ejecutor</span>
+                                </span>
+                            </a>
+                        </div>
+                    </h:panelGroup>
+
+                </nav>
+
+                <!-- DERECHA: ACCESO RAPIDO POS + IDENTIFICADOR DE ROL + CUENTA -->
+                <div class="apb-topbar-right">
+
+                    <a href="#{request.contextPath}/view/cajero/index.hsm"
+                       class="apb-pos-shortcut"
+                       title="Abrir Terminal Cajero">
+                        <i class="pi pi-desktop"></i>
+                        <span>Cajero</span>
+                    </a>
+
+                    <span class="apb-role-pill apb-topbar-role #{sessionBean.rolBadgeClass}"
+                          title="Tipo de perfil activo">
+                        <i class="#{sessionBean.rolIconClass}"></i>
+                        <span>#{sessionBean.rolEtiqueta}</span>
+                    </span>
+
+                    <!-- Dropdown de cuenta de usuario -->
+                    <div class="apb-nav-item apb-dropdown">
+                        <button type="button"
+                                class="apb-user-trigger apb-dropdown-trigger"
+                                aria-expanded="false">
+                            <span class="apb-avatar #{sessionBean.rolBadgeClass}">#{sessionBean.iniciales}</span>
+                            <span class="apb-user-meta">
+                                <span class="apb-user-name">#{sessionBean.primerNombre}</span>
+                                <span class="apb-user-handle">@#{sessionBean.username}</span>
+                            </span>
+                            <i class="pi pi-chevron-down apb-chevron" style="margin-right:2px;"></i>
+                        </button>
+
+                        <div class="apb-dropdown-menu apb-dropdown-right" role="menu">
+                            <div class="apb-user-card-head">
+                                <strong style="font-size:0.9rem;">#{sessionBean.nombreMostrar}</strong>
+                                <span style="font-size:0.75rem;color:var(--apb-text-secondary);">
+                                    #{empty sessionBean.email ? '@' : ''}#{empty sessionBean.email ? sessionBean.username : sessionBean.email}
+                                </span>
+                                <span class="apb-role-pill #{sessionBean.rolBadgeClass}" style="align-self:flex-start;margin-top:2px;">
+                                    <i class="#{sessionBean.rolIconClass}"></i>
+                                    <span>#{sessionBean.rolEtiqueta} (#{sessionBean.rolCodigo})</span>
+                                </span>
+                            </div>
+
+                            <h:panelGroup rendered="#{sessionBean.realAdmin}">
+                                <p:commandLink action="#{sessionBean.alternarVistaTrabajador}"
+                                               ajax="false"
+                                               styleClass="apb-dropdown-link">
+                                    <span class="apb-dropdown-icon">
+                                        <i class="pi #{sessionBean.vistaTrabajadorSimulada ? 'pi-shield' : 'pi-eye'}"></i>
+                                    </span>
+                                    <span class="apb-dropdown-body">
+                                        <span class="apb-dropdown-title">
+                                            #{sessionBean.vistaTrabajadorSimulada ? 'Volver a vista Admin' : 'Simular vista Trabajador'}
+                                        </span>
+                                        <span class="apb-dropdown-desc">
+                                            #{sessionBean.vistaTrabajadorSimulada ? 'Restaurar menús administrativos' : 'Probar vista operativa del trabajador'}
+                                        </span>
+                                    </span>
+                                </p:commandLink>
+                                <div class="apb-dropdown-divider"></div>
+                            </h:panelGroup>
+
+                            <p:commandLink action="#{loginBean.logout}"
+                                           ajax="false"
+                                           styleClass="apb-dropdown-link is-danger">
+                                <span class="apb-dropdown-icon">
+                                    <i class="pi pi-sign-out"></i>
+                                </span>
+                                <span class="apb-dropdown-body">
+                                    <span class="apb-dropdown-title">Cerrar Sesión</span>
+                                    <span class="apb-dropdown-desc">Finalizar sesión de forma segura</span>
+                                </span>
+                            </p:commandLink>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                            id="apbMobileToggle"
+                            class="apb-mobile-toggle"
+                            aria-expanded="false"
+                            aria-label="Abrir menú">
+                        <i class="pi pi-bars"></i>
+                    </button>
+                </div>
+
+            </div>
+        </h:form>
+
+        <!-- Menu movil -->
+        <div id="apbMobileNav" class="apb-mobile-nav">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span class="apb-role-pill #{sessionBean.rolBadgeClass}">
+                    <i class="#{sessionBean.rolIconClass}"></i>
+                    <span>#{sessionBean.rolEtiqueta}</span>
+                </span>
+                <span style="font-size:0.78rem;color:var(--apb-text-secondary);">#{sessionBean.nombreMostrar}</span>
+            </div>
+
+            <div class="apb-mobile-group-title">Operación</div>
+            <div class="apb-mobile-links">
+                <a href="#{request.contextPath}/view/mailbox/index.hsm" class="apb-dropdown-link">
+                    <span class="apb-dropdown-icon"><i class="pi pi-th-large"></i></span>
+                    <span class="apb-dropdown-title">Dashboard</span>
+                </a>
+                <a href="#{request.contextPath}/view/cajero/index.hsm" class="apb-dropdown-link is-featured">
+                    <span class="apb-dropdown-icon"><i class="pi pi-desktop"></i></span>
+                    <span class="apb-dropdown-title">Pantalla de Cajero (POS)</span>
+                </a>
+                <a href="#{request.contextPath}/view/ventas/index.hsm" class="apb-dropdown-link">
+                    <span class="apb-dropdown-icon"><i class="pi pi-ticket"></i></span>
+                    <span class="apb-dropdown-title">Historial de Ventas</span>
+                </a>
+                <a href="#{request.contextPath}/view/inventario/index.hsm" class="apb-dropdown-link">
+                    <span class="apb-dropdown-icon"><i class="pi pi-box"></i></span>
+                    <span class="apb-dropdown-title">Productos e Inventario</span>
+                </a>
+                <a href="#{request.contextPath}/view/clientes/index.hsm" class="apb-dropdown-link">
+                    <span class="apb-dropdown-icon"><i class="pi pi-users"></i></span>
+                    <span class="apb-dropdown-title">Clientes</span>
+                </a>
+            </div>
+
+            <h:panelGroup rendered="#{sessionBean.adminView}">
+                <div class="apb-mobile-group-title">Administración</div>
+                <div class="apb-mobile-links">
+                    <a href="#{request.contextPath}/view/admin/usuarios.hsm" class="apb-dropdown-link is-admin-item">
+                        <span class="apb-dropdown-icon"><i class="pi pi-user-plus"></i></span>
+                        <span class="apb-dropdown-title">Usuarios y Cargos (Admin)</span>
+                    </a>
+                    <a href="#{request.contextPath}/view/admin/logs.hsm" class="apb-dropdown-link is-admin-item">
+                        <span class="apb-dropdown-icon"><i class="pi pi-history"></i></span>
+                        <span class="apb-dropdown-title">Logs de Auditoría (Admin)</span>
+                    </a>
+                </div>
+            </h:panelGroup>
+        </div>
+    </header>
+</ui:composition>

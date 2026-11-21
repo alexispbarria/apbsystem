@@ -1,0 +1,166 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="clientes"/>
+
+    <ui:define name="title">APB SALES · Clientes y Métricas</ui:define>
+
+    <ui:define name="content">
+
+        <div class="apb-pos-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:34px;padding:0 12px;font-size:0.80rem;">
+                        <i class="pi pi-arrow-left"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <span class="apb-mini-tag tag-live">Convención RUT xxxxxxxx-x</span>
+                </div>
+                <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                    Clientes y <span>Métricas</span>
+                </h1>
+            </div>
+
+            <h:form id="cliTopActions">
+                <p:commandButton value="Nuevo Cliente"
+                                 icon="pi pi-user-plus"
+                                 action="#{clienteBean.abrirNuevoCliente}"
+                                 process="@this"
+                                 update=":clienteDlgForm"
+                                 oncomplete="PF('dlgCliente').show();"
+                                 styleClass="apb-pf-btn"/>
+            </h:form>
+        </div>
+
+        <h:form id="clientesForm">
+            <div class="apb-filter-bar">
+                <div class="apb-field-col" style="grid-column: span 3;">
+                    <label>Buscar por RUT, nombre o correo</label>
+                    <p:inputText value="#{clienteBean.filtroTexto}" placeholder="Ej: 12345678-5 o nombre...">
+                        <p:ajax event="keyup" delay="250" listener="#{clienteBean.buscar}" update="tablaClientes"/>
+                    </p:inputText>
+                </div>
+                <div>
+                    <p:commandButton value="Actualizar"
+                                     icon="pi pi-refresh"
+                                     action="#{clienteBean.buscar}"
+                                     process="@form"
+                                     update="tablaClientes"
+                                     styleClass="apb-pf-btn"
+                                     style="width:100%;"/>
+                </div>
+            </div>
+
+            <p:dataTable id="tablaClientes"
+                         value="#{clienteBean.clientes}"
+                         var="cli"
+                         paginator="true"
+                         rows="12"
+                         paginatorPosition="bottom"
+                         emptyMessage="Aún no hay clientes registrados.">
+
+                <p:column headerText="RUT" style="width:140px;">
+                    <span style="font-family:var(--apb-font-mono);color:var(--apb-primary);font-weight:600;">
+                        #{cli.rut}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Nombre Completo">
+                    <strong>#{cli.nombreCompleto}</strong>
+                </p:column>
+
+                <p:column headerText="Contacto">
+                    <div style="font-size:0.82rem;">#{empty cli.email ? '-' : cli.email}</div>
+                    <div style="font-size:0.75rem;color:var(--apb-text-muted);">#{empty cli.telefono ? '' : cli.telefono}</div>
+                </p:column>
+
+                <p:column headerText="Compras" style="width:105px;text-align:center;">
+                    <span class="apb-mini-tag tag-pos">#{clienteBean.getCantidadCompras(cli.id)}</span>
+                </p:column>
+
+                <p:column headerText="Monto Acumulado" style="width:150px;text-align:right;">
+                    <strong style="color:#34d399;">#{clienteBean.getTotalComprasFormateado(cli.id)}</strong>
+                </p:column>
+
+                <p:column headerText="" style="width:75px;text-align:center;">
+                    <p:commandButton icon="pi pi-pencil"
+                                     title="Editar cliente"
+                                     action="#{clienteBean.abrirEditarCliente(cli)}"
+                                     process="@this"
+                                     update=":clienteDlgForm"
+                                     oncomplete="PF('dlgCliente').show();"
+                                     styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+                </p:column>
+
+            </p:dataTable>
+        </h:form>
+
+        <!-- MODAL CLIENTE -->
+        <p:dialog header="#{clienteBean.clienteForm.id eq null ? 'Registrar Cliente' : 'Editar Cliente'}"
+                  widgetVar="dlgCliente"
+                  modal="true"
+                  resizable="false"
+                  width="500"
+                  appendTo="@(body)">
+            <h:form id="clienteDlgForm">
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>RUT (formato xxxxxxxx-x) *</label>
+                    <p:inputText id="rutCliModal"
+                                 value="#{clienteBean.clienteForm.rut}"
+                                 converter="rutConverter"
+                                 maxlength="10"
+                                 required="true"
+                                 requiredMessage="El RUT es obligatorio"
+                                 styleClass="apb-rut-input"
+                                 placeholder="Ej: 12345678-5">
+                        <f:validator validatorId="rutValidator"/>
+                    </p:inputText>
+                    <div id="apbRutLiveStatus" class="apb-rut-live-badge">
+                        <i class="pi pi-info-circle"></i>
+                        <span>Convención: xxxxxxxx-x (sin puntos)</span>
+                    </div>
+                    <p:message for="rutCliModal"/>
+                </div>
+
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>Nombre Completo *</label>
+                    <p:inputText value="#{clienteBean.clienteForm.nombreCompleto}" required="true"/>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Correo electrónico</label>
+                        <p:inputText value="#{clienteBean.clienteForm.email}"/>
+                    </div>
+                    <div class="apb-field-col">
+                        <label>Teléfono</label>
+                        <p:inputText value="#{clienteBean.clienteForm.telefono}"/>
+                    </div>
+                </div>
+
+                <div class="apb-field-col" style="margin-bottom:16px;">
+                    <label>Dirección</label>
+                    <p:inputText value="#{clienteBean.clienteForm.direccion}"/>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgCliente').hide();">Cancelar</button>
+                    <p:commandButton value="Guardar Cliente"
+                                     icon="pi pi-check"
+                                     action="#{clienteBean.guardarCliente}"
+                                     process="@form"
+                                     update="@form :clientesForm :appMessages"
+                                     styleClass="apb-pf-btn"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+    </ui:define>
+
+</ui:composition>

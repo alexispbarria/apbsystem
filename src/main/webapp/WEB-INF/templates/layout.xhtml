@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets"
+      lang="es">
+
+<h:head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title><ui:insert name="title">APB SALES · Panel Principal</ui:insert></title>
+
+    <!-- Favicon vectorial APB Sales Core -->
+    <link rel="icon" type="image/svg+xml" href="#{resource['apb-login:images/apb-logo.svg']}"/>
+
+    <!-- Tipografia futurista opcional con fallback automatico -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap"/>
+
+    <!-- Iconos locales + Estilos maestros de aplicacion -->
+    <h:outputStylesheet name="css/primeicons.css" library="omega-layout"/>
+    <h:outputStylesheet name="css/apb-app.css" library="apb-app"/>
+    <ui:insert name="headExtra"/>
+</h:head>
+
+<h:body styleClass="apb-app-page">
+
+    <!-- Notificaciones globales en cristal oscuro -->
+    <p:growl id="appMessages" showSummary="true" showDetail="true" life="4500" globalOnly="false"/>
+
+    <!-- Fondo futurista sutil -->
+    <div class="apb-app-backdrop" aria-hidden="true">
+        <div class="apb-app-grid-bg"></div>
+    </div>
+
+    <div class="apb-shell">
+
+        <!-- Topbar fija con menus dropdown diferenciados por rol -->
+        <ui:include src="/WEB-INF/templates/topbar.xhtml"/>
+
+        <!-- Banner visible solo cuando un ADMIN previsualiza la vista de Trabajador -->
+        <h:panelGroup layout="block"
+                      styleClass="apb-preview-banner"
+                      rendered="#{sessionBean.vistaTrabajadorSimulada}">
+            <h:form id="previewBannerForm" styleClass="apb-preview-banner-inner">
+                <span>
+                    <i class="pi pi-eye" style="margin-right:8px;"></i>
+                    <strong>Modo vista previa activo:</strong> Estás visualizando el sistema como
+                    <strong>Trabajador</strong> (menús y módulos de Administrador ocultos).
+                </span>
+                <p:commandLink action="#{sessionBean.salirVistaSimulada}"
+                               ajax="false"
+                               styleClass="apb-preview-btn">
+                    <i class="pi pi-shield" style="margin-right:6px;"></i>
+                    Volver a vista Administrador
+                </p:commandLink>
+            </h:form>
+        </h:panelGroup>
+
+        <!-- Contenido dinamico de cada vista -->
+        <main class="apb-main-content">
+            <ui:insert name="content"/>
+        </main>
+
+        <!-- Footer estructurado -->
+        <ui:include src="/WEB-INF/templates/footer.xhtml"/>
+
+    </div>
+
+    <!-- Script interactivo global (dropdowns, movil, validador RUT en vivo) -->
+    <h:outputScript name="js/apb-app.js" library="apb-app"/>
+    <ui:insert name="scriptsExtra"/>
+</h:body>
+</html>

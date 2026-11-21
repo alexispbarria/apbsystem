@@ -1,0 +1,354 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="inventario"/>
+
+    <ui:define name="title">APB SALES · Productos e Inventario</ui:define>
+
+    <ui:define name="content">
+
+        <div class="apb-pos-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                    <a href="#{request.contextPath}/view/mailbox/index.hsm"
+                       class="apb-cta-secondary"
+                       style="height:34px;padding:0 12px;font-size:0.80rem;">
+                        <i class="pi pi-arrow-left"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <span class="apb-mini-tag #{productoBean.totalStockBajo gt 0 ? 'tag-admin' : 'tag-live'}">
+                        #{productoBean.totalStockBajo} alerta(s) de stock bajo
+                    </span>
+                </div>
+                <h1 class="apb-hero-title" style="font-size:1.65rem;">
+                    Productos e <span>Inventario</span>
+                </h1>
+            </div>
+
+            <h:form id="invTopActions" rendered="#{sessionBean.adminView}" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <p:commandButton value="Nueva Categoría"
+                                 icon="pi pi-tag"
+                                 action="#{productoBean.abrirNuevaCategoria}"
+                                 process="@this"
+                                 update=":categoriaDlgForm"
+                                 oncomplete="PF('dlgCategoria').show();"
+                                 styleClass="apb-pf-btn-ghost"/>
+                <p:commandButton value="Nuevo Producto"
+                                 icon="pi pi-plus"
+                                 action="#{productoBean.abrirNuevoProducto}"
+                                 process="@this"
+                                 update=":productoDlgForm"
+                                 oncomplete="PF('dlgProducto').show();"
+                                 styleClass="apb-pf-btn"/>
+            </h:form>
+        </div>
+
+        <h:form id="inventarioForm">
+
+            <!-- FILTROS -->
+            <div class="apb-filter-bar">
+                <div class="apb-field-col" style="grid-column: span 2;">
+                    <label>Buscar por nombre, código de barras, SKU o categoría</label>
+                    <p:inputText value="#{productoBean.filtroTexto}" placeholder="Ej: Bebida, 7801610001234, BEB-001...">
+                        <p:ajax event="keyup" delay="250" listener="#{productoBean.buscarProductos}" update="tablaProductos"/>
+                    </p:inputText>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;height:44px;">
+                    <p:selectBooleanCheckbox value="#{productoBean.soloStockBajo}" itemLabel="Solo stock bajo">
+                        <p:ajax listener="#{productoBean.buscarProductos}" update="tablaProductos"/>
+                    </p:selectBooleanCheckbox>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <p:commandButton value="Actualizar"
+                                     icon="pi pi-refresh"
+                                     action="#{productoBean.cargarDatos}"
+                                     process="@form"
+                                     update="@form"
+                                     styleClass="apb-pf-btn"
+                                     style="width:100%;"/>
+                </div>
+            </div>
+
+            <!-- TABLA DE PRODUCTOS -->
+            <p:dataTable id="tablaProductos"
+                         value="#{productoBean.productos}"
+                         var="p"
+                         paginator="true"
+                         rows="12"
+                         paginatorPosition="bottom"
+                         emptyMessage="No hay productos registrados que coincidan con el filtro.">
+
+                <p:column headerText="Producto">
+                    <div style="font-weight:600;">#{p.nombre}</div>
+                    <div style="font-size:0.75rem;color:var(--apb-text-muted);">
+                        #{p.categoria ne null ? p.categoria.nombre : 'General'} · #{p.unidadMedida}
+                    </div>
+                </p:column>
+
+                <p:column headerText="Código de Barras" style="width:165px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.80rem;color:var(--apb-primary);">
+                        #{p.codigoBarra}
+                    </span>
+                </p:column>
+
+                <p:column headerText="SKU" style="width:110px;">
+                    <span style="font-family:var(--apb-font-mono);font-size:0.78rem;">#{p.sku}</span>
+                </p:column>
+
+                <p:column headerText="Costo" rendered="#{sessionBean.adminView}" style="width:110px;text-align:right;">
+                    <span style="color:var(--apb-text-secondary);">#{productoBean.formatoCLP(p.precioCosto)}</span>
+                </p:column>
+
+                <p:column headerText="Precio Venta" style="width:120px;text-align:right;">
+                    <strong style="color:var(--apb-primary);">#{productoBean.formatoCLP(p.precioVenta)}</strong>
+                </p:column>
+
+                <p:column headerText="Stock" style="width:130px;text-align:center;">
+                    <span class="apb-stock-pill #{p.stockActual eq 0 ? 'is-empty' : (p.stockBajo ? 'is-low' : 'is-ok')}">
+                        #{p.stockActual} / mín #{p.stockMinimo}
+                    </span>
+                </p:column>
+
+                <p:column headerText="Acciones" rendered="#{sessionBean.adminView}" style="width:165px;text-align:center;">
+                    <div style="display:inline-flex;gap:6px;">
+                        <p:commandButton icon="pi pi-sliders-h"
+                                         title="Ajustar Stock (Kardex)"
+                                         action="#{productoBean.abrirAjusteStock(p)}"
+                                         process="@this"
+                                         update=":ajusteStockDlgForm"
+                                         oncomplete="PF('dlgAjusteStock').show();"
+                                         styleClass="apb-pf-btn apb-pf-btn-sm"/>
+                        <p:commandButton icon="pi pi-pencil"
+                                         title="Editar producto"
+                                         action="#{productoBean.abrirEditarProducto(p)}"
+                                         process="@this"
+                                         update=":productoDlgForm"
+                                         oncomplete="PF('dlgProducto').show();"
+                                         styleClass="apb-pf-btn-ghost apb-pf-btn-sm"/>
+                    </div>
+                </p:column>
+
+            </p:dataTable>
+
+            <!-- KARDEX / MOVIMIENTOS DE STOCK RECIENTES (SOLO ADMIN) -->
+            <h:panelGroup layout="block" rendered="#{sessionBean.adminView}" style="margin-top:26px;">
+                <div class="apb-section-head">
+                    <div class="apb-section-title-wrap">
+                        <h2 class="apb-section-title">Movimientos Recientes de Stock (Kardex)</h2>
+                        <span class="apb-mini-tag tag-admin">Trazabilidad</span>
+                    </div>
+                </div>
+
+                <p:dataTable value="#{productoBean.movimientosRecientes}"
+                             var="mov"
+                             paginator="true"
+                             rows="8"
+                             paginatorPosition="bottom"
+                             emptyMessage="Aún no se registran movimientos de stock.">
+
+                    <p:column headerText="Fecha" style="width:145px;">
+                        <span style="font-family:var(--apb-font-mono);font-size:0.76rem;color:var(--apb-text-secondary);">
+                            <h:outputText value="#{mov.created}">
+                                <f:convertDateTime pattern="dd/MM/yyyy HH:mm"/>
+                            </h:outputText>
+                        </span>
+                    </p:column>
+
+                    <p:column headerText="Producto">
+                        <strong>#{mov.producto ne null ? mov.producto.nombre : '-'}</strong>
+                    </p:column>
+
+                    <p:column headerText="Tipo" style="width:140px;">
+                        <span class="apb-mini-tag #{mov.tipo eq 'SALIDA_VENTA' or mov.tipo eq 'MERMA' or mov.tipo eq 'AJUSTE_NEGATIVO' ? 'tag-admin' : 'tag-live'}">
+                            #{mov.tipo}
+                        </span>
+                    </p:column>
+
+                    <p:column headerText="Cant." style="width:75px;text-align:center;">
+                        <strong>#{mov.cantidad}</strong>
+                    </p:column>
+
+                    <p:column headerText="Stock (Ant → Nuevo)" style="width:150px;text-align:center;">
+                        <span style="font-family:var(--apb-font-mono);font-size:0.80rem;">
+                            #{mov.stockAnterior} → <strong style="color:var(--apb-primary);">#{mov.stockNuevo}</strong>
+                        </span>
+                    </p:column>
+
+                    <p:column headerText="Ref. / Obs.">
+                        <span style="font-size:0.80rem;color:var(--apb-text-secondary);">
+                            #{mov.referencia}#{not empty mov.observacion ? ' · ' : ''}#{mov.observacion}
+                        </span>
+                    </p:column>
+
+                    <p:column headerText="Responsable" style="width:120px;">
+                        <span>@#{mov.usuario ne null ? mov.usuario.username : '-'}</span>
+                    </p:column>
+
+                </p:dataTable>
+            </h:panelGroup>
+
+        </h:form>
+
+        <!-- MODAL CREAR / EDITAR PRODUCTO (ADMIN) -->
+        <p:dialog header="#{productoBean.productoForm.id eq null ? 'Nuevo Producto' : 'Editar Producto'}"
+                  widgetVar="dlgProducto"
+                  modal="true"
+                  resizable="false"
+                  width="560"
+                  rendered="#{sessionBean.adminView}"
+                  appendTo="@(body)">
+            <h:form id="productoDlgForm">
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Código de Barras *</label>
+                        <p:inputText value="#{productoBean.productoForm.codigoBarra}" required="true" placeholder="EAN-13 / Code-128"/>
+                    </div>
+                    <div class="apb-field-col">
+                        <label>SKU *</label>
+                        <p:inputText value="#{productoBean.productoForm.sku}" required="true" placeholder="Ej: BEB-010"/>
+                    </div>
+                </div>
+
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>Nombre del Producto *</label>
+                    <p:inputText value="#{productoBean.productoForm.nombre}" required="true"/>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Categoría *</label>
+                        <p:selectOneMenu value="#{productoBean.categoriaIdSeleccionada}" required="true">
+                            <f:selectItems value="#{productoBean.categorias}" var="c" itemLabel="#{c.nombre}" itemValue="#{c.id}"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="apb-field-col">
+                        <label>Unidad de medida</label>
+                        <p:inputText value="#{productoBean.productoForm.unidadMedida}" placeholder="UN / KG / LT"/>
+                    </div>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                    <div class="apb-field-col">
+                        <label>Precio Costo (CLP)</label>
+                        <p:inputNumber value="#{productoBean.productoForm.precioCosto}" symbol="$ " decimalPlaces="0" thousandSeparator="." decimalSeparator="," minValue="0"/>
+                    </div>
+                    <div class="apb-field-col">
+                        <label>Precio Venta (CLP) *</label>
+                        <p:inputNumber value="#{productoBean.productoForm.precioVenta}" symbol="$ " decimalPlaces="0" thousandSeparator="." decimalSeparator="," minValue="0" required="true"/>
+                    </div>
+                </div>
+
+                <div class="apb-form-grid-2" style="margin-bottom:16px;">
+                    <h:panelGroup layout="block" styleClass="apb-field-col" rendered="#{productoBean.productoForm.id eq null}">
+                        <label>Stock Inicial</label>
+                        <p:inputNumber value="#{productoBean.productoForm.stockActual}" decimalPlaces="0" minValue="0"/>
+                    </h:panelGroup>
+                    <div class="apb-field-col">
+                        <label>Stock Mínimo (Alerta)</label>
+                        <p:inputNumber value="#{productoBean.productoForm.stockMinimo}" decimalPlaces="0" minValue="0"/>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgProducto').hide();">Cancelar</button>
+                    <p:commandButton value="Guardar Producto"
+                                     icon="pi pi-check"
+                                     action="#{productoBean.guardarProducto}"
+                                     process="@form"
+                                     update="@form :inventarioForm :appMessages"
+                                     styleClass="apb-pf-btn"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- MODAL NUEVA CATEGORIA (ADMIN) -->
+        <p:dialog header="Nueva Categoría"
+                  widgetVar="dlgCategoria"
+                  modal="true"
+                  resizable="false"
+                  width="440"
+                  rendered="#{sessionBean.adminView}"
+                  appendTo="@(body)">
+            <h:form id="categoriaDlgForm">
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>Código *</label>
+                    <p:inputText value="#{productoBean.categoriaForm.codigo}" required="true" placeholder="Ej: LACTEOS"/>
+                </div>
+                <div class="apb-field-col" style="margin-bottom:12px;">
+                    <label>Nombre *</label>
+                    <p:inputText value="#{productoBean.categoriaForm.nombre}" required="true" placeholder="Ej: Lácteos y Refrigerados"/>
+                </div>
+                <div class="apb-field-col" style="margin-bottom:16px;">
+                    <label>Descripción</label>
+                    <p:inputText value="#{productoBean.categoriaForm.descripcion}"/>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgCategoria').hide();">Cancelar</button>
+                    <p:commandButton value="Guardar Categoría"
+                                     icon="pi pi-check"
+                                     action="#{productoBean.guardarCategoria}"
+                                     process="@form"
+                                     update="@form :inventarioForm :appMessages"
+                                     styleClass="apb-pf-btn"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- MODAL AJUSTE DE STOCK (ADMIN) -->
+        <p:dialog header="Ajustar Stock (Kardex)"
+                  widgetVar="dlgAjusteStock"
+                  modal="true"
+                  resizable="false"
+                  width="460"
+                  rendered="#{sessionBean.adminView}"
+                  appendTo="@(body)">
+            <h:form id="ajusteStockDlgForm">
+                <h:panelGroup rendered="#{productoBean.productoAjuste ne null}">
+                    <div class="apb-session-cell" style="margin-bottom:14px;">
+                        <span>Producto seleccionado</span>
+                        <strong>#{productoBean.productoAjuste.nombre} (Stock actual: #{productoBean.productoAjuste.stockActual} u.)</strong>
+                    </div>
+
+                    <div class="apb-form-grid-2" style="margin-bottom:12px;">
+                        <div class="apb-field-col">
+                            <label>Tipo de movimiento</label>
+                            <p:selectOneMenu value="#{productoBean.tipoMovimientoAjuste}">
+                                <f:selectItem itemLabel="Entrada / Reposición (+)" itemValue="ENTRADA"/>
+                                <f:selectItem itemLabel="Ajuste Positivo (+)" itemValue="AJUSTE_POSITIVO"/>
+                                <f:selectItem itemLabel="Ajuste Negativo (-)" itemValue="AJUSTE_NEGATIVO"/>
+                                <f:selectItem itemLabel="Merma / Pérdida (-)" itemValue="MERMA"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="apb-field-col">
+                            <label>Cantidad</label>
+                            <p:inputNumber value="#{productoBean.cantidadAjuste}" decimalPlaces="0" minValue="1" required="true"/>
+                        </div>
+                    </div>
+
+                    <div class="apb-field-col" style="margin-bottom:16px;">
+                        <label>Motivo / Observación</label>
+                        <p:inputText value="#{productoBean.observacionAjuste}" placeholder="Ej: Recepción factura proveedor #442"/>
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;gap:10px;">
+                        <button type="button" class="apb-cta-secondary" style="height:42px;" onclick="PF('dlgAjusteStock').hide();">Cancelar</button>
+                        <p:commandButton value="Aplicar Movimiento"
+                                         icon="pi pi-check"
+                                         action="#{productoBean.aplicarAjusteStock}"
+                                         process="@form"
+                                         update="@form :inventarioForm :appMessages"
+                                         styleClass="apb-pf-btn"/>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+    </ui:define>
+
+</ui:composition>

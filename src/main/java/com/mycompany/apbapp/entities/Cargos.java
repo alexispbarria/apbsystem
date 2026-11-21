@@ -6,13 +6,11 @@ package com.mycompany.apbapp.entities;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.NamedQueries;
-import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
@@ -29,16 +27,14 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "cargos")
-@NamedQueries({
-    @NamedQuery(name = "Cargos.findAll", query = "SELECT c FROM Cargos c")})
 public class Cargos implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
-    @Column(name = "int")
-    private Integer int1;
+    @Column(name = "id")
+    private Integer id;
     @Basic(optional = false)
     @NotNull
     @Column(name = "created")
@@ -69,12 +65,12 @@ public class Cargos implements Serializable {
     public Cargos() {
     }
 
-    public Cargos(Integer int1) {
-        this.int1 = int1;
+    public Cargos(Integer id) {
+        this.id = id;
     }
 
-    public Cargos(Integer int1, Date created, Date modified, String nombre, String codigo, boolean enabled) {
-        this.int1 = int1;
+    public Cargos(Integer id, Date created, Date modified, String nombre, String codigo, boolean enabled) {
+        this.id = id;
         this.created = created;
         this.modified = modified;
         this.nombre = nombre;
@@ -82,12 +78,12 @@ public class Cargos implements Serializable {
         this.enabled = enabled;
     }
 
-    public Integer getInt1() {
-        return int1;
+    public Integer getId() {
+        return id;
     }
 
-    public void setInt1(Integer int1) {
-        this.int1 = int1;
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public Date getCreated() {
@@ -141,7 +137,7 @@ public class Cargos implements Serializable {
     @Override
     public int hashCode() {
         int hash = 0;
-        hash += (int1 != null ? int1.hashCode() : 0);
+        hash += (id != null ? id.hashCode() : 0);
         return hash;
     }
 
@@ -152,7 +148,7 @@ public class Cargos implements Serializable {
             return false;
         }
         Cargos other = (Cargos) object;
-        if ((this.int1 == null && other.int1 != null) || (this.int1 != null && !this.int1.equals(other.int1))) {
+        if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
         return true;
@@ -160,7 +156,7 @@ public class Cargos implements Serializable {
 
     @Override
     public String toString() {
-        return "com.mycompany.apbapp.entities.Cargos[ int1=" + int1 + " ]";
+        return "com.mycompany.apbapp.entities.Cargos[ id=" + id + " ]";
     }
     
 }

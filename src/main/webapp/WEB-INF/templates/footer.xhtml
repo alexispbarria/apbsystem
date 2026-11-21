@@ -1,0 +1,20 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="jakarta.faces.facelets">
+
+    <footer class="apb-footer">
+        <div class="apb-footer-inner">
+            <div class="apb-footer-left">
+                <span class="apb-footer-dot" aria-hidden="true"></span>
+                <span><strong>APB Sales Core</strong> · Maqueta v1.0 · Sistema de Ventas</span>
+            </div>
+
+            <div class="apb-footer-right">
+                <span>PERFIL: #{sessionBean.rolCodigo}</span>
+                <span>SESIÓN: #{sessionBean.sessionUuidCorto}</span>
+                <a href="#{request.contextPath}/view/mailbox/index.hsm" style="color:var(--apb-primary);">Dashboard</a>
+                <a href="#{request.contextPath}/view/cajero/index.hsm" style="color:var(--apb-primary);">Cajero</a>
+            </div>
+        </div>
+    </footer>
+
+</ui:composition>

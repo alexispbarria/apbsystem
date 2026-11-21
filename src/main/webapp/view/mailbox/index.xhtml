@@ -1,0 +1,345 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/layout.xhtml">
+
+    <ui:param name="activePage" value="dashboard"/>
+
+    <ui:define name="title">APB SALES · Dashboard</ui:define>
+
+    <ui:define name="content">
+
+        <!-- 1. HERO DE BIENVENIDA -->
+        <section class="apb-hero-card">
+            <div class="apb-hero-info">
+                <div class="apb-hero-top-tags">
+                    <span class="apb-role-pill #{sessionBean.rolBadgeClass}">
+                        <i class="#{sessionBean.rolIconClass}"></i>
+                        <span>#{sessionBean.adminView ? 'Panel de Administración (ADMIN)' : 'Panel Operativo · Trabajador'}</span>
+                    </span>
+                    <span class="apb-date-chip">
+                        <i class="pi pi-calendar"></i>
+                        <span>#{dashboardBean.fechaActualFormateada}</span>
+                    </span>
+                </div>
+
+                <h1 class="apb-hero-title">
+                    #{dashboardBean.saludoDinamico}, <span>#{sessionBean.primerNombre}</span>
+                </h1>
+
+                <p class="apb-hero-subtitle">
+                    <h:outputText rendered="#{sessionBean.adminView}"
+                                  value="Control integral de ventas, inventario con kardex, clientes, cajas diarias y auditoría de acciones del sistema."/>
+                    <h:outputText rendered="#{sessionBean.trabajadorView}"
+                                  value="Abre tu turno de caja, opera el punto de venta con escáner de barras, consulta productos y revisa tus ventas."/>
+                </p>
+            </div>
+
+            <div class="apb-hero-actions">
+                <a href="#{request.contextPath}/view/cajero/index.hsm" class="apb-cta-primary">
+                    <i class="pi pi-desktop"></i>
+                    <span>Abrir Pantalla de Cajero</span>
+                    <i class="pi pi-arrow-right apb-arrow-shift"></i>
+                </a>
+
+                <h:form id="heroQuickForm" rendered="#{sessionBean.realAdmin}">
+                    <p:commandLink action="#{sessionBean.alternarVistaTrabajador}"
+                                   ajax="false"
+                                   styleClass="apb-cta-secondary">
+                        <i class="pi #{sessionBean.vistaTrabajadorSimulada ? 'pi-shield' : 'pi-eye'}"></i>
+                        <span>#{sessionBean.vistaTrabajadorSimulada ? 'Modo Administrador' : 'Vista Trabajador'}</span>
+                    </p:commandLink>
+                </h:form>
+            </div>
+        </section>
+
+        <!-- 2. KPIS EN VIVO DESDE BASE DE DATOS -->
+        <section class="apb-kpi-grid" aria-label="Indicadores en tiempo real">
+
+            <article class="apb-kpi-card" style="--stagger:1; --kpi-accent:#00e5ff;">
+                <div class="apb-kpi-top">
+                    <span class="apb-kpi-icon"><i class="pi pi-wallet"></i></span>
+                    <span class="apb-mini-tag #{dashboardBean.cajaActiva ne null ? 'tag-live' : 'tag-soon'}">
+                        #{dashboardBean.cajaActiva ne null ? 'Abierta' : 'Cerrada'}
+                    </span>
+                </div>
+                <div class="apb-kpi-label">Estado de Caja</div>
+                <div class="apb-kpi-value" style="font-size:1.3rem;">#{dashboardBean.estadoCajaTexto}</div>
+                <div class="apb-kpi-foot">#{dashboardBean.cajaInicialTexto}</div>
+            </article>
+
+            <article class="apb-kpi-card" style="--stagger:2; --kpi-accent:#10b981;">
+                <div class="apb-kpi-top">
+                    <span class="apb-kpi-icon"><i class="pi pi-dollar"></i></span>
+                    <span class="apb-mini-tag tag-live">Hoy</span>
+                </div>
+                <div class="apb-kpi-label">Ventas del Día</div>
+                <div class="apb-kpi-value">#{dashboardBean.ventasHoyFormateado}</div>
+                <div class="apb-kpi-foot">#{dashboardBean.transaccionesHoy} boleta(s) completada(s) hoy</div>
+            </article>
+
+            <article class="apb-kpi-card" style="--stagger:3; --kpi-accent:#3b82f6;">
+                <div class="apb-kpi-top">
+                    <span class="apb-kpi-icon"><i class="pi pi-box"></i></span>
+                    <span class="apb-mini-tag #{dashboardBean.totalStockBajo gt 0 ? 'tag-admin' : 'tag-live'}">
+                        #{dashboardBean.totalStockBajo} stock bajo
+                    </span>
+                </div>
+                <div class="apb-kpi-label">Catálogo de Productos</div>
+                <div class="apb-kpi-value">#{dashboardBean.totalProductosActivos}</div>
+                <div class="apb-kpi-foot">Clientes registrados: #{dashboardBean.totalClientes}</div>
+            </article>
+
+            <h:panelGroup layout="block"
+                          styleClass="apb-kpi-card"
+                          style="--stagger:4; --kpi-accent:#a78bfa;"
+                          rendered="#{sessionBean.adminView}">
+                <div class="apb-kpi-top">
+                    <span class="apb-kpi-icon" style="background:var(--apb-admin-bg);border-color:var(--apb-admin-border);">
+                        <i class="pi pi-users"></i>
+                    </span>
+                    <span class="apb-mini-tag tag-admin">Admin</span>
+                </div>
+                <div class="apb-kpi-label">Usuarios del Sistema</div>
+                <div class="apb-kpi-value">#{dashboardBean.totalUsuarios}</div>
+                <div class="apb-kpi-foot">Auditoría activa en todas las operaciones</div>
+            </h:panelGroup>
+
+        </section>
+
+        <!-- 3. MODULOS OPERATIVOS (TODOS LOS ROLES) -->
+        <section class="apb-section">
+            <div class="apb-section-head">
+                <div class="apb-section-title-wrap">
+                    <h2 class="apb-section-title">Operación Comercial</h2>
+                    <span class="apb-mini-tag tag-pos">Acceso General</span>
+                </div>
+                <span class="apb-section-sub">Herramientas activas para operación diaria de ventas</span>
+            </div>
+
+            <div class="apb-module-grid">
+                <a href="#{request.contextPath}/view/cajero/index.hsm" class="apb-module-card is-pos-hero" style="--stagger:1;">
+                    <span class="apb-module-top">
+                        <span class="apb-module-icon"><i class="pi pi-desktop"></i></span>
+                        <span class="apb-mini-tag tag-pos">POS Real</span>
+                    </span>
+                    <span>
+                        <span class="apb-module-title">Pantalla de Cajero (POS)</span>
+                        <span class="apb-module-desc">
+                            Caja inicial, búsqueda por código de barras (USB + cámara) y por nombre, con descuento automático de stock.
+                        </span>
+                    </span>
+                    <span class="apb-module-action">
+                        <span>Ingresar a Cajero</span>
+                        <i class="pi pi-arrow-right"></i>
+                    </span>
+                </a>
+
+                <a href="#{request.contextPath}/view/inventario/index.hsm" class="apb-module-card" style="--stagger:2;">
+                    <span class="apb-module-top">
+                        <span class="apb-module-icon"><i class="pi pi-box"></i></span>
+                        <span class="apb-mini-tag tag-live">Activo</span>
+                    </span>
+                    <span>
+                        <span class="apb-module-title">Productos e Inventario</span>
+                        <span class="apb-module-desc">
+                            Consulta de catálogo, precios CLP y stock disponible#{sessionBean.adminView ? ' + creación, ajustes y kardex' : ''}.
+                        </span>
+                    </span>
+                    <span class="apb-module-action">
+                        <span>Abrir Inventario</span>
+                        <i class="pi pi-arrow-right"></i>
+                    </span>
+                </a>
+
+                <a href="#{request.contextPath}/view/ventas/index.hsm" class="apb-module-card" style="--stagger:3;">
+                    <span class="apb-module-top">
+                        <span class="apb-module-icon"><i class="pi pi-ticket"></i></span>
+                        <span class="apb-mini-tag tag-live">Activo</span>
+                    </span>
+                    <span>
+                        <span class="apb-module-title">Historial de Ventas</span>
+                        <span class="apb-module-desc">
+                            Consulta folios, productos vendidos, medios de pago#{sessionBean.adminView ? ' y anulaciones con devolución de stock' : ''}.
+                        </span>
+                    </span>
+                    <span class="apb-module-action">
+                        <span>Ver Ventas</span>
+                        <i class="pi pi-arrow-right"></i>
+                    </span>
+                </a>
+
+                <a href="#{request.contextPath}/view/clientes/index.hsm" class="apb-module-card" style="--stagger:4;">
+                    <span class="apb-module-top">
+                        <span class="apb-module-icon"><i class="pi pi-users"></i></span>
+                        <span class="apb-mini-tag tag-live">Activo</span>
+                    </span>
+                    <span>
+                        <span class="apb-module-title">Clientes y Métricas</span>
+                        <span class="apb-module-desc">
+                            Registro de clientes con RUT validado (xxxxxxxx-x), frecuencia y monto acumulado de compras.
+                        </span>
+                    </span>
+                    <span class="apb-module-action">
+                        <span>Abrir Clientes</span>
+                        <i class="pi pi-arrow-right"></i>
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <!-- 4. MODULOS EXCLUSIVOS DE ADMINISTRADOR -->
+        <h:form id="dashboardAdminForm" rendered="#{sessionBean.adminView}">
+            <section class="apb-section">
+                <div class="apb-section-head">
+                    <div class="apb-section-title-wrap">
+                        <h2 class="apb-section-title">Gestión y Control Administrativo</h2>
+                        <span class="apb-mini-tag tag-admin">Exclusivo ADMIN</span>
+                    </div>
+                    <span class="apb-section-sub">Sección protegida únicamente para el Administrador</span>
+                </div>
+
+                <div class="apb-module-grid">
+                    <a href="#{request.contextPath}/view/admin/logs.hsm" class="apb-module-card is-admin-card" style="--stagger:1;">
+                        <span class="apb-module-top">
+                            <span class="apb-module-icon"><i class="pi pi-history"></i></span>
+                            <span class="apb-mini-tag tag-live">Activo</span>
+                        </span>
+                        <span>
+                            <span class="apb-module-title">Logs de Auditoría</span>
+                            <span class="apb-module-desc">
+                                Historial completo de cada acción realizada en el sistema, usuario responsable, rol, módulo e IP.
+                            </span>
+                        </span>
+                        <span class="apb-module-action">
+                            <span>Revisar Logs</span>
+                            <i class="pi pi-arrow-right"></i>
+                        </span>
+                    </a>
+
+                    <a href="#{request.contextPath}/view/admin/usuarios.hsm" class="apb-module-card is-admin-card" style="--stagger:2;">
+                        <span class="apb-module-top">
+                            <span class="apb-module-icon"><i class="pi pi-user-plus"></i></span>
+                            <span class="apb-mini-tag tag-live">Activo</span>
+                        </span>
+                        <span>
+                            <span class="apb-module-title">Usuarios y Cargos</span>
+                            <span class="apb-module-desc">
+                                Creación interna de cuentas de trabajadores, asignación de cargos, contraseñas y control de estado.
+                            </span>
+                        </span>
+                        <span class="apb-module-action">
+                            <span>Administrar Usuarios</span>
+                            <i class="pi pi-arrow-right"></i>
+                        </span>
+                    </a>
+                </div>
+            </section>
+        </h:form>
+
+        <!-- 5. PANEL INFERIOR: ALERTAS DE STOCK / ULTIMOS LOGS (ADMIN) + SESION -->
+        <section class="apb-bottom-grid">
+
+            <!-- Alertas de Stock Bajo o Ultimos Logs para Admin -->
+            <div class="apb-glass-panel">
+                <h:panelGroup rendered="#{sessionBean.adminView}">
+                    <div class="apb-section-head" style="margin-bottom:12px;">
+                        <h3 class="apb-panel-title" style="margin:0;">
+                            <i class="pi pi-history"></i>
+                            <span>Actividad Reciente del Sistema</span>
+                        </h3>
+                        <a href="#{request.contextPath}/view/admin/logs.hsm" style="font-size:0.78rem;color:var(--apb-primary);">
+                            Ver todos →
+                        </a>
+                    </div>
+
+                    <h:panelGroup rendered="#{empty dashboardBean.ultimosLogs}">
+                        <p class="apb-section-sub" style="margin:0;">
+                            Aún no hay eventos registrados o falta ejecutar el script SQL en MySQL.
+                        </p>
+                    </h:panelGroup>
+
+                    <ui:repeat value="#{dashboardBean.ultimosLogs}" var="lg">
+                        <div class="apb-ticket-row">
+                            <span style="min-width:0;">
+                                <span class="apb-mini-tag tag-admin" style="margin-right:6px;">#{lg.modulo}</span>
+                                <strong style="font-size:0.82rem;">@#{lg.username}</strong>
+                                <span style="color:var(--apb-text-secondary);font-size:0.80rem;"> — #{lg.detalle}</span>
+                            </span>
+                            <span style="font-family:var(--apb-font-mono);font-size:0.72rem;color:var(--apb-text-muted);white-space:nowrap;">
+                                <h:outputText value="#{lg.created}">
+                                    <f:convertDateTime pattern="dd/MM HH:mm"/>
+                                </h:outputText>
+                            </span>
+                        </div>
+                    </ui:repeat>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{sessionBean.trabajadorView}">
+                    <h3 class="apb-panel-title">
+                        <i class="pi pi-exclamation-triangle"></i>
+                        <span>Alertas de Stock Bajo</span>
+                    </h3>
+                    <h:panelGroup rendered="#{empty dashboardBean.productosStockBajo}">
+                        <p class="apb-section-sub" style="margin:0;">
+                            Todos los productos activos cuentan con stock suficiente sobre su mínimo.
+                        </p>
+                    </h:panelGroup>
+                    <ui:repeat value="#{dashboardBean.productosStockBajo}" var="pr">
+                        <div class="apb-ticket-row">
+                            <span><strong>#{pr.nombre}</strong> <span style="color:var(--apb-text-muted);font-size:0.76rem;">(#{pr.sku})</span></span>
+                            <span class="apb-stock-pill #{pr.stockActual eq 0 ? 'is-empty' : 'is-low'}">
+                                #{pr.stockActual} u.
+                            </span>
+                        </div>
+                    </ui:repeat>
+                </h:panelGroup>
+            </div>
+
+            <!-- Credencial de sesion activa -->
+            <div class="apb-glass-panel">
+                <h3 class="apb-panel-title">
+                    <i class="pi pi-id-card"></i>
+                    <span>Identidad de Sesión Activa</span>
+                </h3>
+
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span class="apb-avatar #{sessionBean.rolBadgeClass}" style="width:46px;height:46px;font-size:1rem;">
+                        #{sessionBean.iniciales}
+                    </span>
+                    <div>
+                        <div style="font-weight:700;font-size:0.98rem;">#{sessionBean.nombreMostrar}</div>
+                        <span class="apb-role-pill #{sessionBean.rolBadgeClass}" style="margin-top:5px;">
+                            <i class="#{sessionBean.rolIconClass}"></i>
+                            <span>#{sessionBean.rolEtiqueta} · #{sessionBean.rolCodigo}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="apb-session-dl">
+                    <div class="apb-session-cell">
+                        <span>Usuario</span>
+                        <strong>@#{sessionBean.username}</strong>
+                    </div>
+                    <div class="apb-session-cell">
+                        <span>Nivel de Acceso</span>
+                        <strong>#{sessionBean.adminView ? 'Administrador Total' : 'Operativo Trabajador'}</strong>
+                    </div>
+                    <div class="apb-session-cell">
+                        <span>ID Sesión</span>
+                        <strong>#{sessionBean.sessionUuidCorto}</strong>
+                    </div>
+                    <div class="apb-session-cell">
+                        <span>Stock Crítico</span>
+                        <strong>#{dashboardBean.totalStockBajo} producto(s)</strong>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </ui:define>
+
+</ui:composition>

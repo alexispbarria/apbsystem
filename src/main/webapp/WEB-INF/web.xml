@@ -66,15 +66,15 @@
         <param-value>true</param-value>
     </context-param>
     
-    <!-- CONEXIÓN A RAILWAY -->
+    <!-- CONEXIÓN LOCAL -->
     <data-source>
         <name>java:app/jdbc/MiAppDB</name>
         <class-name>com.mysql.cj.jdbc.MysqlDataSource</class-name>
-        <server-name>metro.proxy.rlwy.net</server-name>
-        <port-number>36135</port-number>
-        <database-name>railway</database-name>
+        <server-name>localhost</server-name>
+        <port-number>3306</port-number>
+        <database-name>apbapp_bd</database-name>
         <user>root</user>
-        <password>yIOTUXuvaaCPDoJpcqGOlSjEMVGkOFKy</password>
+        <password>bandera.46</password>
         <property>
             <name>serverTimezone</name>
             <value>America/Santiago</value>
